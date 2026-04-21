@@ -1,0 +1,171 @@
+{
+  "run_id": "20260327_151619",
+  "started_at": "2026-03-27T15:16:19.223085",
+  "config": {
+    "target_urls": [
+      "https://www.zara.com/us/en/woman-new-in-l1180.html"
+    ],
+    "start_date": "202402",
+    "end_date": "202602",
+    "target_clean_per_month": 60,
+    "sampling_strategy": "every_month"
+  },
+  "months": {
+    "202402": {
+      "raw_total": 0,
+      "clean_total": 46,
+      "target": 60,
+      "keep_rate": 0.745
+    },
+    "202403": {
+      "raw_total": 0,
+      "clean_total": 54,
+      "target": 60,
+      "keep_rate": 0.9
+    },
+    "202404": {
+      "raw_total": 0,
+      "clean_total": 21,
+      "target": 60,
+      "keep_rate": 0.709
+    },
+    "202405": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202406": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202407": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202408": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202409": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202410": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202411": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202412": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202501": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202502": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202503": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202504": {
+      "raw_total": 0,
+      "clean_total": 75,
+      "target": 60,
+      "keep_rate": 0.65
+    },
+    "202505": {
+      "raw_total": 0,
+      "clean_total": 95,
+      "target": 60,
+      "keep_rate": 0.587
+    },
+    "202506": {
+      "raw_total": 0,
+      "clean_total": 14,
+      "target": 60,
+      "keep_rate": 0.47
+    },
+    "202507": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202508": {
+      "raw_total": 0,
+      "clean_total": 50,
+      "target": 60,
+      "keep_rate": 0.671
+    },
+    "202509": {
+      "raw_total": 0,
+      "clean_total": 24,
+      "target": 60,
+      "keep_rate": 0.562
+    },
+    "202510": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    },
+    "202511": {
+      "raw_total": 0,
+      "clean_total": 62,
+      "target": 60,
+      "keep_rate": 0.661
+    },
+    "202512": {
+      "raw_total": 0,
+      "clean_total": 61,
+      "target": 60,
+      "keep_rate": 0.9
+    },
+    "202601": {
+      "raw_total": 0,
+      "clean_total": 42,
+      "target": 60,
+      "keep_rate": 0.755
+    },
+    "202602": {
+      "raw_total": 0,
+      "clean_total": 0,
+      "target": 60,
+      "keep_rate": 0.5
+    }
+  },
+  "finished_at": "2026-03-28T01:56:32.923137",
+  "summary": {
+    "total_months": 25,
+    "months_at_target": 4,
+    "total_clean_records": 544
+  }
+}

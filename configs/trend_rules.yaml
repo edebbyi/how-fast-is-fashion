@@ -1,0 +1,284 @@
+# Trend rule engine config (per ARCHITECTURE.md §3.6)
+#
+# Each trend lists:
+#   peak_years        — when the trend was dominant (informational; rules themselves are time-agnostic)
+#   discriminating_details — the subset of the closed `details` vocab that maps to this trend
+#   rule              — the deterministic match rule (used by trend_rule_engine)
+#
+# RULE SEMANTICS:
+#   - `any_of: [...]`   — item matches the trend when ANY block in the list matches
+#   - within a block, all attribute conditions must be satisfied (implicit AND)
+#   - attribute conditions accept either a scalar (exact match) or a list (membership)
+#   - special key `details_any_of` matches if the item's details contains ANY of the listed tokens
+#   - special key `details_all_of` matches if the item's details contains ALL of the listed tokens
+#
+# An item that matches no trend → `unmapped` (per ARCHITECTURE.md §3.6).
+# An item may match multiple trends; that's fine — the aggregator handles overlap.
+
+trend_rule_version: v1
+
+trends:
+
+  quiet_luxury:
+    name: Quiet Luxury / Old Money
+    peak_years: [2024]
+    description: Understated, expensive-looking minimalism. Heritage tailoring + tonal neutrals.
+    discriminating_details: [structured_shoulder, minimal_hardware, monochrome]
+    rule:
+      any_of:
+        - subcategory: [blazer, trench_coat, loafer]
+          material: [wool, cashmere, tweed, silk]
+        - color_profile: [camel, cream, navy, beige, taupe, black]
+          details_any_of: [structured_shoulder, minimal_hardware]
+
+  mob_wife:
+    name: Mob Wife
+    peak_years: [2024]
+    description: Loud glamorous maximalism — fur, animal print, gold hardware.
+    discriminating_details: [chain_hardware, gold_hardware]
+    rule:
+      any_of:
+        - material: [faux_fur, leather]
+        - pattern: [leopard_print, snakeskin_print]
+        - subcategory: [slip_dress]
+          details_any_of: [gold_hardware, chain_hardware]
+
+  office_siren:
+    name: Office Siren / Corp Core
+    peak_years: [2024, 2025]
+    description: Y2K-coded sexy corporate. Tailored, sheer, sharp.
+    discriminating_details: [sheer_panel]
+    rule:
+      any_of:
+        - subcategory: [pencil_skirt, slim_trouser, button_shirt, turtleneck]
+          color_profile: [black, grey, brown, navy, beige]
+        - silhouette: fitted
+          material: [satin, mesh]
+          color_profile: [black, grey, brown]
+
+  coquette_balletcore:
+    name: Coquette / Balletcore
+    peak_years: [2024]
+    description: Hyper-feminine. Bows, ribbons, lace, satin. Blush palette.
+    discriminating_details: [bow, ribbon_trim, lace_trim, ruffle, gathered]
+    rule:
+      any_of:
+        - details_any_of: [bow, ribbon_trim, lace_trim]
+          color_profile: [pink, blush, ivory, cream, white]
+        - sleeve_style: puff_sleeve
+          neckline: [sweetheart, square_neck]
+          color_profile: [pink, blush, ivory, white]
+        - material: [satin, lace]
+          details_any_of: [bow, ribbon_trim]
+
+  western_cowboy:
+    name: Western / Cowboy
+    peak_years: [2024]
+    description: Beyoncé-Cowboy-Carter Americana revival.
+    discriminating_details: [fringe, western_yoke, pearl_snap]
+    rule:
+      any_of:
+        - details_any_of: [fringe, western_yoke, pearl_snap]
+        - subcategory: [cowboy_boot]
+        - material: [suede]
+          color_profile: [tan, brown, beige, rust]
+
+  boho_revival:
+    name: Boho Revival
+    peak_years: [2025, 2026]
+    description: Chemena-Kamali Chloé-led return. Darker, more tailored than 2010s boho.
+    discriminating_details: [fringe, lace_up, tassel, tiered]
+    rule:
+      any_of:
+        - material: [suede, crochet]
+          color_profile: [brown, tan, rust, olive, cream, terracotta]
+        - details_any_of: [fringe, tiered, lace_up, tassel]
+          subcategory: [maxi_skirt, peasant_blouse, midi_dress]
+        - subcategory: [peasant_blouse]
+
+  nautical_stripes:
+    name: Nautical Stripes
+    peak_years: [2025]
+    description: Breton stripes, sailor suiting, navy + white maritime palette.
+    discriminating_details: [sailor_collar, anchor_motif, double_breasted]
+    rule:
+      any_of:
+        - pattern: [striped]
+          color_profile: [navy, white, blue]
+        - details_any_of: [sailor_collar, anchor_motif, double_breasted]
+          color_profile: [navy, white, cream]
+
+  sheer_lace:
+    name: Sheer / Lace / Naked Dressing
+    peak_years: [2024, 2025, 2026]
+    description: Layered sheer, lace overlays, illusion necklines.
+    discriminating_details: [sheer_panel, lace_overlay, illusion_neckline, cut_out]
+    rule:
+      any_of:
+        - details_any_of: [sheer_panel, lace_overlay, illusion_neckline, cut_out]
+        - material: [mesh, lace]
+
+  bubble_hem:
+    name: Bubble Hem / Voluminous
+    peak_years: [2025]
+    description: Sculptural bubble skirts and dresses. '80s revival.
+    discriminating_details: [bubble_hem, gathered_volume]
+    rule:
+      any_of:
+        - details_any_of: [bubble_hem, gathered_volume]
+        - silhouette: balloon
+
+  peplum_revival:
+    name: Peplum Revival
+    peak_years: [2024, 2025]
+    description: Waist-flaring tops and dresses. Softer than 2010s structured peplum.
+    discriminating_details: [peplum_hem, drop_waist]
+    rule:
+      any_of:
+        - details_any_of: [peplum_hem, drop_waist]
+
+  sporty_prep:
+    name: Sporty Prep / Rugby Revival
+    peak_years: [2025, 2026]
+    description: Heritage Americana sportswear. Rugby, varsity, polo, tennis.
+    discriminating_details: [embroidered_crest, pleated]
+    rule:
+      any_of:
+        - subcategory: [rugby_shirt, polo, varsity_jacket, tennis_skirt, cardigan]
+        - pattern: [color_block, striped]
+          details_any_of: [embroidered_crest, pleated]
+        - material: [cable_knit]
+
+  glamoratti_maximalism:
+    name: Glamoratti / Maximalism (anti-quiet-luxury)
+    peak_years: [2026]
+    description: Pinterest 2026 emergent. Sculpted shoulders, gold, gloss, oversized.
+    discriminating_details: [sculpted_shoulder, padded_shoulder, metallic_finish, statement_button]
+    rule:
+      any_of:
+        - details_any_of: [sculpted_shoulder, padded_shoulder, metallic_finish]
+        - material: [satin, sequined]
+          color_profile: [gold, silver, black]
+        - silhouette: oversized
+          details_any_of: [statement_button, gold_hardware, chain_hardware]
+
+
+# Closed `details` vocabulary — the union of all trends' discriminating_details.
+# This is what the teacher labeling LLM should produce (no other tokens).
+# Grouped by trend cluster for prompt readability.
+details_vocab:
+
+  romantic_coquette:
+    - bow
+    - ribbon_trim
+    - lace_trim
+    - ruffle
+    - gathered
+    - smocked
+
+  western_boho:
+    - fringe
+    - western_yoke
+    - pearl_snap
+    - lace_up
+    - tassel
+    - tiered
+
+  sheer_lace_y2k:
+    - sheer_panel
+    - lace_overlay
+    - illusion_neckline
+    - cut_out
+
+  glamoratti_hardware:
+    - chain_hardware
+    - gold_hardware
+    - sculpted_shoulder
+    - padded_shoulder
+    - statement_button
+    - metallic_finish
+
+  nautical_prep:
+    - sailor_collar
+    - anchor_motif
+    - double_breasted
+    - embroidered_crest
+    - pleated
+
+  volumetric:
+    - bubble_hem
+    - gathered_volume
+
+  structural:
+    - peplum_hem
+    - drop_waist
+
+  quiet_luxury:
+    - structured_shoulder
+    - minimal_hardware
+    - monochrome
+
+
+# Vocabulary extensions to apply to other attribute fields
+# (these get added to the base vocab in the teacher labeling prompt).
+attribute_extensions:
+
+  material:
+    - velvet
+    - cashmere
+    - suede
+    - faux_fur
+    - tweed
+    - mesh
+    - crochet
+    - lace
+    - sequined
+    - cable_knit
+
+  pattern:
+    - leopard_print
+    - snakeskin_print
+    - color_block
+
+  silhouette:
+    - balloon
+
+  subcategory_examples:
+    # Closed examples that frequently appear in trend rules; LLM may use other
+    # subcategories not listed here, but should bias toward these terms.
+    - blazer
+    - trench_coat
+    - pencil_skirt
+    - slim_trouser
+    - button_shirt
+    - turtleneck
+    - slip_dress
+    - peasant_blouse
+    - maxi_skirt
+    - midi_dress
+    - cowboy_boot
+    - loafer
+    - rugby_shirt
+    - polo
+    - varsity_jacket
+    - tennis_skirt
+    - cardigan
+
+
+# Trends explicitly EXCLUDED from v1 (do NOT add rules for these — they
+# either over-match or have no garment-level discriminators).
+excluded_trends:
+  athleisure: peak ~2017-2019. No unique discriminator beyond "athletic + cropped".
+  normcore: peak 2014. No discriminator beyond "basic tee + jeans".
+  gorpcore: confirmed but Zara womenswear carries little technical outerwear.
+  barbiecore: pure pink color trend (already in color_profile).
+  tomato_girl: lifestyle aesthetic, no garment discriminator.
+  coastal_grandmother: lifestyle aesthetic.
+  coastal_cowgirl: overlap with western_cowboy.
+  tenniscore: overlap with sporty_prep.
+  Y2K_broad: too diffuse; absorbed into office_siren / peplum / sheer.
+  castlecore: limited Zara crossover.
+  doll_aesthetic: limited Zara crossover.
+  fisherman_aesthetic: mostly footwear/accessories.
+  poetcore: 2026 Pinterest signal but discriminators overlap quiet_luxury.
+  moto_boho: sub-tag of boho_revival, not a separate trend.

@@ -1,0 +1,56 @@
+# Mining configuration
+# Add multiple target_urls to mine different listing pages or retailers
+
+target_urls:
+  - "https://www.zara.com/us/en/woman-new-in-l1180.html"
+  - "https://www.zara.com/us/en/woman-dresses-l1066.html"
+  - "https://www.zara.com/us/en/woman-outerwear-l1184.html"
+
+start_date: "202402"
+end_date: "202602"
+
+# Target number of CLEAN records per month (not raw)
+target_clean_per_month: 60
+
+# Minimum file size in bytes to consider a valid product image
+min_image_bytes: 12000
+
+# Sampling strategy: "every_month", "random_months", "quarterly"
+sampling_strategy: "every_month"
+
+# Only used if sampling_strategy is "random_months"
+random_month_count: 6
+
+# Request settings
+request_timeout_seconds: 8
+retry_count: 3
+delay_between_months_seconds: 2
+
+# Maximum snapshots to evaluate per target URL per month
+max_snapshots_per_url: 100
+
+# Image URL filtering heuristics
+good_url_signals:
+  - "zara.net"
+  - "static.zara.net"
+  - "/photos/"
+  - "/contents/"
+  - ".jpg"
+  - ".jpeg"
+  - ".png"
+  - ".webp"
+
+bad_url_signals:
+  - "logo"
+  - "icon"
+  - "sprite"
+  - "flag"
+  - "favicon"
+  - "payment"
+  - "social"
+  - "avatar"
+  - "analytics"
+  - "tracking"
+  - ".svg"
+  - "loader.gif"
+  - "transparent-background"

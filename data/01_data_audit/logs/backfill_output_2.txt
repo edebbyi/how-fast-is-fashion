@@ -1,0 +1,249 @@
+INFO     | __init__ | Miner initialized | urls=3 | range=202402-202602 | strategy=every_month | target_clean=60/month
+INFO     | run | Mining 25 months from 3 target URLs
+INFO     | run | [1/25] Processing 202402...
+INFO     | build_month_to_target | 2024-02: clean=46/60 gap=14 keep_rate=0.75 -> raw_batch=19
+INFO     | mine_raw_batch | 2024-02: requesting 19 raw records
+INFO     | mine_raw_batch | 2024-02: 1 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-02: 0 untried candidates from https://web.archive.org/web/20240229083043/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-02: 1 snapshots for https://www.zara.com/us/en/woman-dresses-l1066.html
+INFO     | mine_raw_batch | 2024-02: 0 untried candidates from https://web.archive.org/web/20240221045831/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-02: raw batch complete, +0 records
+INFO     | build_month_to_target | 2024-02: +0 raw, +0 clean, 15 removed during cleaning
+INFO     | build_month_to_target | 2024-02: no more raw records available, stopping
+INFO     | run | [2/25] Processing 202403...
+INFO     | build_month_to_target | 2024-03: clean=54/60 gap=6 keep_rate=0.63 -> raw_batch=10
+INFO     | mine_raw_batch | 2024-03: requesting 10 raw records
+INFO     | mine_raw_batch | 2024-03: 1 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-03: 0 untried candidates from https://web.archive.org/web/20240324035252/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-03: 2 snapshots for https://www.zara.com/us/en/woman-dresses-l1066.html
+INFO     | mine_raw_batch | 2024-03: 77 untried candidates from https://web.archive.org/web/20240303060440/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-03: raw batch complete, +10 records
+INFO     | build_month_to_target | 2024-03: +10 raw, +0 clean, 0 removed during cleaning
+INFO     | build_month_to_target | 2024-03: batch produced no clean records, stopping
+INFO     | run | [3/25] Processing 202404...
+INFO     | build_month_to_target | 2024-04: clean=58/60 gap=2 keep_rate=0.41 -> raw_batch=5
+INFO     | mine_raw_batch | 2024-04: requesting 5 raw records
+INFO     | mine_raw_batch | 2024-04: 5 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-04: 49 untried candidates from https://web.archive.org/web/20240412182013/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-04: raw batch complete, +5 records
+INFO     | build_month_to_target | 2024-04: +5 raw, +0 clean, 9 removed during cleaning
+INFO     | build_month_to_target | 2024-04: batch produced no clean records, stopping
+INFO     | run | [4/25] Processing 202405...
+INFO     | build_month_to_target | 2024-05: target achieved (77/60 clean)
+INFO     | run | [5/25] Processing 202406...
+INFO     | build_month_to_target | 2024-06: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2024-06: requesting 120 raw records
+INFO     | mine_raw_batch | 2024-06: 6 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-06: 57 untried candidates from https://web.archive.org/web/20240619095234/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-06: 60 untried candidates from https://web.archive.org/web/20240621152031/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-06: 62 untried candidates from https://web.archive.org/web/20240622222836/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-06: 63 untried candidates from https://web.archive.org/web/20240623214604/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-06: 56 untried candidates from https://web.archive.org/web/20240624154032/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-06: raw batch complete, +120 records
+INFO     | build_month_to_target | 2024-06: +120 raw, +128 clean, 2 removed during cleaning
+INFO     | build_month_to_target | 2024-06: target achieved (128/60 clean)
+INFO     | run | [6/25] Processing 202407...
+INFO     | build_month_to_target | 2024-07: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2024-07: requesting 120 raw records
+WARNING  | get_month_snapshots | CDX 202407 attempt 1: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+INFO     | mine_raw_batch | 2024-07: 3 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-07: 59 untried candidates from https://web.archive.org/web/20240714205338/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-07: 56 untried candidates from https://web.archive.org/web/20240717215541/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-07: 67 untried candidates from https://web.archive.org/web/20240721063644/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-07: 25 snapshots for https://www.zara.com/us/en/woman-dresses-l1066.html
+INFO     | mine_raw_batch | 2024-07: 10 untried candidates from https://web.archive.org/web/20240712151802/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-07: 10 untried candidates from https://web.archive.org/web/20240712212155/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-07: 10 untried candidates from https://web.archive.org/web/20240713060200/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-07: 10 untried candidates from https://web.archive.org/web/20240713103633/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-07: 10 untried candidates from https://web.archive.org/web/20240713191500/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-07: 10 untried candidates from https://web.archive.org/web/20240714173935/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-07: 146 untried candidates from https://web.archive.org/web/20240715144332/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-07: raw batch complete, +120 records
+INFO     | build_month_to_target | 2024-07: +120 raw, +117 clean, 3 removed during cleaning
+INFO     | build_month_to_target | 2024-07: target achieved (117/60 clean)
+INFO     | run | [7/25] Processing 202408...
+INFO     | build_month_to_target | 2024-08: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2024-08: requesting 120 raw records
+INFO     | mine_raw_batch | 2024-08: 3 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240812101441/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240813052040/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-08: 197 untried candidates from https://web.archive.org/web/20240829111702/https://www.zara.com/us/en/woman-new-
+WARNING  | get_month_snapshots | CDX 202408 attempt 1: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+INFO     | mine_raw_batch | 2024-08: 22 snapshots for https://www.zara.com/us/en/woman-dresses-l1066.html
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240802235329/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240803034329/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240803155046/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240804182910/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240805134740/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240805214924/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240806202128/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240807145816/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240807175911/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: 10 untried candidates from https://web.archive.org/web/20240808063552/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-08: raw batch complete, +120 records
+INFO     | build_month_to_target | 2024-08: +120 raw, +71 clean, 49 removed during cleaning
+INFO     | build_month_to_target | 2024-08: target achieved (71/60 clean)
+INFO     | run | [8/25] Processing 202409...
+INFO     | build_month_to_target | 2024-09: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2024-09: requesting 120 raw records
+INFO     | mine_raw_batch | 2024-09: 7 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-09: 52 untried candidates from https://web.archive.org/web/20240902140621/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-09: 62 untried candidates from https://web.archive.org/web/20240909113834/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-09: 46 untried candidates from https://web.archive.org/web/20240915202604/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-09: 62 untried candidates from https://web.archive.org/web/20240916130359/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-09: raw batch complete, +120 records
+INFO     | build_month_to_target | 2024-09: +120 raw, +116 clean, 4 removed during cleaning
+INFO     | build_month_to_target | 2024-09: target achieved (116/60 clean)
+INFO     | run | [9/25] Processing 202410...
+INFO     | build_month_to_target | 2024-10: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2024-10: requesting 120 raw records
+WARNING  | get_month_snapshots | CDX 202410 attempt 1: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+WARNING  | get_month_snapshots | CDX 202410 attempt 2: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+INFO     | mine_raw_batch | 2024-10: 6 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-10: 64 untried candidates from https://web.archive.org/web/20241002134615/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-10: 9 untried candidates from https://web.archive.org/web/20241006163218/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-10: 67 untried candidates from https://web.archive.org/web/20241008071459/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-10: 10 untried candidates from https://web.archive.org/web/20241008182859/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-10: 10 untried candidates from https://web.archive.org/web/20241014112049/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-10: 10 untried candidates from https://web.archive.org/web/20241016021534/https://www.zara.com/us/en/woman-new-
+WARNING  | get_month_snapshots | CDX 202410 attempt 1: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+INFO     | mine_raw_batch | 2024-10: 29 snapshots for https://www.zara.com/us/en/woman-dresses-l1066.html
+INFO     | mine_raw_batch | 2024-10: 55 untried candidates from https://web.archive.org/web/20241002175743/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-10: raw batch complete, +120 records
+INFO     | build_month_to_target | 2024-10: +120 raw, +120 clean, 0 removed during cleaning
+INFO     | build_month_to_target | 2024-10: target achieved (120/60 clean)
+INFO     | run | [10/25] Processing 202411...
+INFO     | build_month_to_target | 2024-11: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2024-11: requesting 120 raw records
+INFO     | mine_raw_batch | 2024-11: 4 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241102153757/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-11: 9 untried candidates from https://web.archive.org/web/20241107084311/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-11: 9 untried candidates from https://web.archive.org/web/20241109215506/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2024-11: 144 untried candidates from https://web.archive.org/web/20241117215947/https://www.zara.com/us/en/woman-new-
+WARNING  | get_month_snapshots | CDX 202411 attempt 1: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+WARNING  | get_month_snapshots | CDX 202411 attempt 2: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+INFO     | mine_raw_batch | 2024-11: 23 snapshots for https://www.zara.com/us/en/woman-dresses-l1066.html
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241102051715/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241103165834/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241104145849/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241105102427/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241107042049/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241107131546/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241107161510/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241108005658/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241109001829/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241109033931/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241109140349/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241110183830/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241111150310/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241111172000/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241112035655/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241113194837/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241114033134/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241114101726/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241114173550/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241114212452/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241114234035/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 10 untried candidates from https://web.archive.org/web/20241115044926/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: 57 untried candidates from https://web.archive.org/web/20241117192928/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-11: raw batch complete, +120 records
+INFO     | build_month_to_target | 2024-11: +120 raw, +113 clean, 7 removed during cleaning
+INFO     | build_month_to_target | 2024-11: target achieved (113/60 clean)
+INFO     | run | [11/25] Processing 202412...
+INFO     | build_month_to_target | 2024-12: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2024-12: requesting 120 raw records
+INFO     | mine_raw_batch | 2024-12: 1 snapshots for https://www.zara.com/us/en/woman-dresses-l1066.html
+INFO     | mine_raw_batch | 2024-12: 51 untried candidates from https://web.archive.org/web/20241212024450/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2024-12: 5 snapshots for https://www.zara.com/us/en/woman-outerwear-l1184.html
+INFO     | mine_raw_batch | 2024-12: 10 untried candidates from https://web.archive.org/web/20241202224116/https://www.zara.com/us/en/woman-oute
+INFO     | mine_raw_batch | 2024-12: 10 untried candidates from https://web.archive.org/web/20241211141725/https://www.zara.com/us/en/woman-oute
+INFO     | mine_raw_batch | 2024-12: 59 untried candidates from https://web.archive.org/web/20241212024450/https://www.zara.com/us/en/woman-oute
+INFO     | mine_raw_batch | 2024-12: 10 untried candidates from https://web.archive.org/web/20241213070539/https://www.zara.com/us/en/woman-oute
+INFO     | mine_raw_batch | 2024-12: 10 untried candidates from https://web.archive.org/web/20241213152931/https://www.zara.com/us/en/woman-oute
+INFO     | mine_raw_batch | 2024-12: raw batch complete, +90 records
+INFO     | build_month_to_target | 2024-12: +90 raw, +89 clean, 1 removed during cleaning
+INFO     | build_month_to_target | 2024-12: target achieved (89/60 clean)
+INFO     | run | [12/25] Processing 202501...
+INFO     | build_month_to_target | 2025-01: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2025-01: requesting 120 raw records
+INFO     | mine_raw_batch | 2025-01: 4 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250120153759/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250122202211/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-01: 58 untried candidates from https://web.archive.org/web/20250130115258/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-01: 58 untried candidates from https://web.archive.org/web/20250131015701/https://www.zara.com/us/en/woman-new-
+WARNING  | get_month_snapshots | CDX 202501 attempt 1: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+INFO     | mine_raw_batch | 2025-01: 30 snapshots for https://www.zara.com/us/en/woman-dresses-l1066.html
+INFO     | mine_raw_batch | 2025-01: 55 untried candidates from https://web.archive.org/web/20250103002400/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250112233200/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250113063351/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250113142539/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250114005201/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250114235919/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250115012818/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250115230643/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250116094706/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250116214213/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250117070020/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250117150128/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250118000110/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250118202030/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250119070259/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250119173549/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250120134702/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250121072241/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250121162911/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250122115145/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250122143248/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250122183328/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250122204330/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250123031915/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250124052018/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250124091528/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250125061244/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250126153221/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 61 untried candidates from https://web.archive.org/web/20250130074120/https://www.zara.com/us/en/woman-dres
+INFO     | mine_raw_batch | 2025-01: 56 untried candidates from https://web.archive.org/web/20250130130945/https://www.zara.com/us/en/woman-dres
+WARNING  | get_month_snapshots | CDX 202501 attempt 1: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+INFO     | mine_raw_batch | 2025-01: 28 snapshots for https://www.zara.com/us/en/woman-outerwear-l1184.html
+INFO     | mine_raw_batch | 2025-01: 10 untried candidates from https://web.archive.org/web/20250113031001/https://www.zara.com/us/en/woman-oute
+INFO     | mine_raw_batch | 2025-01: 49 untried candidates from https://web.archive.org/web/20250113050028/https://www.zara.com/us/en/woman-oute
+INFO     | mine_raw_batch | 2025-01: raw batch complete, +120 records
+INFO     | build_month_to_target | 2025-01: +120 raw, +120 clean, 0 removed during cleaning
+INFO     | build_month_to_target | 2025-01: target achieved (120/60 clean)
+INFO     | run | [13/25] Processing 202502...
+INFO     | build_month_to_target | 2025-02: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2025-02: requesting 120 raw records
+INFO     | mine_raw_batch | 2025-02: 6 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2025-02: 485 untried candidates from https://web.archive.org/web/20250207145504/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-02: 485 untried candidates from https://web.archive.org/web/20250207182441/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-02: 502 untried candidates from https://web.archive.org/web/20250208220729/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-02: raw batch complete, +120 records
+INFO     | build_month_to_target | 2025-02: +120 raw, +103 clean, 17 removed during cleaning
+INFO     | build_month_to_target | 2025-02: target achieved (103/60 clean)
+INFO     | run | [14/25] Processing 202503...
+INFO     | build_month_to_target | 2025-03: clean=0/60 gap=60 keep_rate=0.50 -> raw_batch=120
+INFO     | mine_raw_batch | 2025-03: requesting 120 raw records
+WARNING  | get_month_snapshots | CDX 202503 attempt 1: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=20)
+INFO     | mine_raw_batch | 2025-03: 7 snapshots for https://www.zara.com/us/en/woman-new-in-l1180.html
+INFO     | mine_raw_batch | 2025-03: 85 untried candidates from https://web.archive.org/web/20250307194524/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-03: 65 untried candidates from https://web.archive.org/web/20250317012646/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-03: 73 untried candidates from https://web.archive.org/web/20250319195940/https://www.zara.com/us/en/woman-new-
+INFO     | mine_raw_batch | 2025-03: 247 untried candidates from https://web.archive.org/web/20250320115938/https://www.zara.com/us/en/woman-new-
+Traceback (most recent call last):
+  File "<string>", line 5, in <module>
+    results = miner.run()
+  File "/Users/esosaimafidon/Documents/GitHub/how-fast-is-fashion/src/fashion_forensics/mining/miner.py", line 771, in run
+    self.build_month_to_target(m)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Users/esosaimafidon/Documents/GitHub/how-fast-is-fashion/src/fashion_forensics/mining/miner.py", line 725, in build_month_to_target
+    raw_added = self.mine_raw_batch(month_str, raw_batch_target)
+  File "/Users/esosaimafidon/Documents/GitHub/how-fast-is-fashion/src/fashion_forensics/mining/miner.py", line 659, in mine_raw_batch
+    (image_dir / filename).write_bytes(content)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py", line 801, in write_bytes
+    with self.open(mode='wb') as f:
+         ~~~~~~~~~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py", line 776, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 28] No space left on device: '/Users/esosaimafidon/Documents/GitHub/how-fast-is-fashion/data/01_data_audit/raw_images/2025-03/item_049.jpg'

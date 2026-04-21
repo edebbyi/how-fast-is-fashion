@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# Data — images are too large for git (hosted separately)
+data/01_data_audit/raw_images/
+data/02_reference_corpus/raw/
+data/02_reference_corpus/boards/
+data/04_training/*.jsonl
+*.parquet
+
+# Vector DB binary files — rebuildable from scripts/embed_reference_corpus.py
+data/02_reference_corpus/qdrant/
+
+# Data — these ARE committed for reproducibility:
+# data/01_data_audit/records/*.jsonl       (raw metadata audit trail)
+# data/01_data_audit/cleaned/*.jsonl       (filtered dataset)
+# data/01_data_audit/state/*.json          (mining state)
+# data/01_data_audit/normalization/        (LLM outputs + prompts)
+# data/01_data_audit/evaluation/           (gold set + run results)
+# data/03_shared/taxonomy/                 (trend definitions)
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb_metadata/
+
+# MLflow
+mlruns/
+mlflow.db
+
+# IDE
+.vscode/
+.idea/
+.qodo/
+.zencoder/
+.zenflow/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Misc
+*.log
+*.tmp
