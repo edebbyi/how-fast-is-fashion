@@ -1,0 +1,37 @@
+# Reference-corpus text captions for hybrid (image + text) retrieval.
+#
+# These captions are embedded with fashion-CLIP's text encoder and stored
+# alongside each reference's image embedding as a named vector in Qdrant.
+# At query time, the product image is compared to image_vec AND the LLM-
+# normalized product description is compared to caption_vec. Fused score
+# drives the trend prediction.
+#
+# Why same-modal comparison matters: fashion-CLIP's text-to-text similarity
+# is significantly tighter than text-to-image (the "modality gap"). Storing
+# caption embeddings lets text cues from §3.2 normalization contribute at
+# full weight instead of being dampened by the cross-modal gap.
+#
+# Style guide for captions:
+#   - Short (≤ 30 tokens; CLIP's text tower truncates at 77)
+#   - Visual-descriptive (what you'd see in the image)
+#   - Material + silhouette + vibe — the textures, cuts, and "feel" that
+#     distinguish this trend from the others
+#   - No trend names in the caption text (let the embedding carry that);
+#     we want the text tower to match on what the LLM normalizer would
+#     produce when describing a retail product.
+#
+# All references within a class share this caption today. Per-image
+# overrides can be added later as sidecar files: e.g. a file named
+# `mobwife-3.caption.txt` next to the image would override the class
+# default for that one reference.
+
+trends:
+  mobwife: >
+    oversized fur coat, animal print, bold gold jewelry, dark sunglasses,
+    glamorous maximalist styling, vintage luxury, sultry elegance
+  office_siren: >
+    fitted pencil skirt, tailored blouse, sheer hosiery, glasses,
+    sleek hair, structured silhouette, sensual workwear
+  quiet_luxury: >
+    neutral tones, cashmere and silk, tailored fits, no logos,
+    minimalist elegance, understated expensive simplicity

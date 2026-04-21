@@ -1,0 +1,52 @@
+{
+  "quiet_luxury": {
+    "description": "Minimal branding, neutral palette, premium fabrics, clean silhouettes, understated elegance",
+    "keywords": ["linen", "cashmere", "neutral", "minimal hardware", "understated", "beige", "cream", "wool blend"],
+    "years_active": [2023, 2024, 2025]
+  },
+  "coquette": {
+    "description": "Bows, pink tones, lace, ballet flats, soft femininity, delicate details",
+    "keywords": ["bow", "ribbon", "pink", "lace", "ballet", "ruffle", "satin", "pearl"],
+    "years_active": [2024, 2025]
+  },
+  "mob_wife": {
+    "description": "Fur, leopard print, gold jewelry, bold silhouettes, maximalist glamour",
+    "keywords": ["fur", "leopard", "gold", "oversized coat", "animal print", "statement jewelry"],
+    "years_active": [2024]
+  },
+  "office_siren": {
+    "description": "Sharp tailoring, pencil skirts, power blazers, structured shoulders, corporate sensuality",
+    "keywords": ["pencil skirt", "blazer", "tailored", "structured", "pinstripe", "sheer", "bodycon"],
+    "years_active": [2024, 2025]
+  },
+  "coastal_grandmother": {
+    "description": "Relaxed linen, light layers, nautical tones, straw accessories, easy elegance",
+    "keywords": ["linen", "khaki", "straw", "navy", "white pants", "loafer", "tote"],
+    "years_active": [2023, 2024]
+  },
+  "boho_revival": {
+    "description": "Flowing maxi dresses, fringe, crochet, earthy tones, festival-inspired",
+    "keywords": ["maxi dress", "fringe", "crochet", "suede", "earthy", "bohemian", "paisley"],
+    "years_active": [2024, 2025]
+  },
+  "cherry_red": {
+    "description": "Bold cherry and tomato red across all categories, monochromatic red looks",
+    "keywords": ["cherry red", "red", "tomato red", "scarlet", "crimson"],
+    "years_active": [2025]
+  },
+  "burgundy_moment": {
+    "description": "Deep wine, plum, and burgundy tones across outerwear, knitwear, and accessories",
+    "keywords": ["burgundy", "wine", "plum", "maroon", "oxblood", "deep red"],
+    "years_active": [2024, 2025]
+  },
+  "quiet_outdoors": {
+    "description": "Gorpcore meets minimalism, technical fabrics in muted palettes, functional but refined",
+    "keywords": ["gorpcore", "technical", "windbreaker", "cargo", "hiking", "olive", "utility"],
+    "years_active": [2024, 2025, 2026]
+  },
+  "romantic_minimalism": {
+    "description": "Soft draping, muted florals, sheer layers, whisper-weight fabrics",
+    "keywords": ["drape", "sheer", "floral", "chiffon", "silk", "soft", "layered"],
+    "years_active": [2025, 2026]
+  }
+}
