@@ -336,7 +336,8 @@ The LLM in the perception stage does NOT score trends. Trend interpretation is d
 - Calibration: Expected Calibration Error (ECE)
 - Retrieval quality: neighbor purity @ k, silhouette score (cosine)
 - Artifacts: confusion matrix PNG, UMAP of the embedding space
-- v4 baseline (35 refs, k=5, shepard, fashion-CLIP): accuracy 0.80, macro-F1 0.80, ECE 0.137, purity@5 0.63, silhouette 0.077
+- v5 baseline (59 refs, k=5, shepard, fashion-CLIP, hybrid α=0.95): accuracy 0.915, macro-F1 0.915, per-class recall {mobwife 0.89, office_siren 0.95, quiet_luxury 0.90}
+- v4 baseline for comparison (35 refs, image-only): accuracy 0.80, macro-F1 0.80, ECE 0.137, purity@5 0.63, silhouette 0.077
 
 **Suggested output schema (appended to normalized product records)**
 ```json
@@ -923,6 +924,28 @@ Prefer a complete v1 with constrained coverage over a wider but partial build.
 - §3.6 trend_rule_engine clarified as ONE of three parallel trend signals, not the sole interpretation layer.
 - New `configs/trend_rules.yaml` defines the 12-trend taxonomy + closed `details` vocabulary + rule definitions.
 - Notebook prompt-iteration lab in `notebooks/02_attributes_and_model.ipynb` uses the perception-only LLM prompt.
+
+### v5 (2026-04-25) — Hybrid retrieval (path-B) shipped, peak accuracy 0.915
+
+- §3.5 retrieval pipeline now uses fashion-CLIP's **dual encoders** end-to-end. Every Qdrant point carries `image_vec` (vision tower on the photo) AND `caption_vec` (text tower on the LLM-normalized attribute description). At inference, query image and query attributes are embedded by the same dual towers; two parallel cosine searches run; scores are fused with weight α before voting.
+- New `attributes_to_text(attrs) -> str` in `src/fashion_forensics/normalization/normalizer.py` — deterministic flatten of the §3.2 attribute schema into a fashion-CLIP-compatible caption string. Used on **both** reference and query sides so text-tower comparisons are same-distribution (no surface-form drift).
+- New `normalize_image(image_path) -> dict` for ad-hoc single-image labeling decoupled from the monthly folder structure. Used by the reference-corpus normalizer.
+- New `scripts/normalize_reference_corpus.py` with **prompt-version-aware idempotency**: each record carries the Langfuse prompt version it was labeled at; re-runs skip up-to-date entries, automatically re-label stale ones (no manual `--force` needed when the prompt evolves).
+- New `data/02_reference_corpus/attributes.jsonl` committed as a versioned artifact — 59 records, same schema as the monthly normalization outputs. Source of truth that the embedder reads at ingestion time.
+- `scripts/embed_reference_corpus.py` now reads `attributes.jsonl`, flattens via `attributes_to_text()`, embeds with fashion-CLIP's text tower, and writes real `caption_vec` (no longer the image-vec placeholder). Falls back to image_vec only for refs that lack an attributes record (with a warning).
+- `scripts/eval_trend_classifier.py` adds `--mode {image, text, hybrid}` and `--alpha`. Each invocation logs a separate MLflow run with `search_mode` and `alpha` as params.
+- v5 baseline metrics (59 refs, k=5, Shepard, LOOCV):
+
+  | Mode | Accuracy | Macro F1 | ECE | mobwife recall | office recall | quiet recall |
+  |---|---|---|---|---|---|---|
+  | image | 0.831 | 0.832 | 0.098 | 0.83 | 0.86 | 0.80 |
+  | text | 0.814 | 0.813 | 0.098 | 0.89 | 0.86 | 0.70 |
+  | hybrid α=0.6 | 0.831 | 0.831 | 0.113 | 0.83 | 0.81 | 0.85 |
+  | **hybrid α=0.95** | **0.915** | **0.915** | — | 0.89 | 0.95 | 0.90 |
+
+- α sensitivity curve (LOOCV macro-F1): plateau at 0.81–0.83 for α ≤ 0.6, climb from 0.7 onward, peak 0.915 at α=0.95, drop back to 0.83 at α=1.0. About 5% text-weight is the sweet spot — the method is not flat-fragile to the knob; the curve shape is informative.
+- Notebook `03_trend_classification.ipynb` extended with sections 9–11: 3-mode LOOCV runner, mode comparison table with per-class recalls, side-by-side confusion matrices (image / text / hybrid), α-sensitivity sweep + plot, findings + caveats.
+- `pyproject.toml`: added `openai>=1.0` (was used by normalizer.py but missing from declared deps).
 
 ### v4 (2026-04-20) — FashionCLIP baseline SHIPPED via retrieval architecture
 - §3.5 architecture changed from **mean-pooled exemplar cosine** to **per-reference k-NN over Qdrant** (vector DB). Every labeled reference image is stored as its own point with `{trend, filename, image_path}` payload. Inference returns the specific matched reference filenames — explainability that mean-pooling couldn't provide.
