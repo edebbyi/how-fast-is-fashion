@@ -1,8 +1,7 @@
 """Leave-one-out evaluation of the fashion-CLIP + Qdrant trend classifier.
 
-For each of the 35 reference images: query Qdrant with that image's
-embedding *excluding itself*, get top-k neighbors, vote, compare to the
-ground-truth label. Logs to MLflow:
+For each labeled reference image: query Qdrant excluding itself, get top-k
+neighbors, vote, compare to ground truth. Logs to MLflow:
   - confusion matrix PNG
   - per-class precision / recall / F1
   - macro-F1, accuracy
@@ -11,13 +10,22 @@ ground-truth label. Logs to MLflow:
   - neighbor purity @ k
   - 2D UMAP scatter of the embeddings
 
+Search modes (one MLflow run per call):
+  --mode image     pure visual k-NN (image_vec only)
+  --mode text      pure text-to-text k-NN (caption_vec only); requires
+                   data/02_reference_corpus/attributes.jsonl
+  --mode hybrid    fuse both with alpha (default 0.6 weight on image)
+
 Usage:
-    .venv/bin/python scripts/eval_trend_classifier.py --k 5
+    .venv/bin/python scripts/eval_trend_classifier.py --mode image --k 5
+    .venv/bin/python scripts/eval_trend_classifier.py --mode text  --k 5
+    .venv/bin/python scripts/eval_trend_classifier.py --mode hybrid --k 5 --alpha 0.6
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import tempfile
 from pathlib import Path
 
@@ -35,12 +43,14 @@ from sklearn.metrics import (
 )
 
 from fashion_forensics.config import PROJECT_ROOT, settings
+from fashion_forensics.normalization import attributes_to_text
 from fashion_forensics.retrieval.classifier import predict_trend
 from fashion_forensics.retrieval.embedder import FashionClipEmbedder
 from fashion_forensics.retrieval.qdrant_store import TrendQdrantStore
 from fashion_forensics.tracking import track_experiment
 
 LABELED_ROOT = PROJECT_ROOT / "data" / "02_reference_corpus" / "labeled"
+ATTRIBUTES_PATH = PROJECT_ROOT / "data" / "02_reference_corpus" / "attributes.jsonl"
 IMAGE_EXTS = {".jpg", ".jpeg", ".webp", ".png"}
 
 
@@ -55,6 +65,17 @@ def discover_refs() -> tuple[list[Path], list[str]]:
                 paths.append(p)
                 labels.append(trend_dir.name)
     return paths, labels
+
+
+def load_attributes_by_filename() -> dict[str, dict]:
+    if not ATTRIBUTES_PATH.exists():
+        return {}
+    out: dict[str, dict] = {}
+    for line in ATTRIBUTES_PATH.read_text().splitlines():
+        if line.strip():
+            rec = json.loads(line)
+            out[rec["filename"]] = rec
+    return out
 
 
 def expected_calibration_error(
@@ -80,11 +101,14 @@ def neighbor_purity_at_k(
     store: TrendQdrantStore,
     k: int,
 ) -> float:
-    """For each ref, fraction of top-k neighbors (excluding self) sharing its label."""
+    """For each ref, fraction of top-k neighbors (excluding self) sharing its label.
+
+    Always uses image_vec — purity is a measure of the image-embedding space's
+    local structure, not of the chosen retrieval mode.
+    """
     purities = []
     vectors = embedder.embed_images(paths)
     for path, label, vec in zip(paths, labels, vectors):
-        # Default search is on image_vec (the image named vector)
         neighbors = store.search(vec, limit=k, exclude_filenames=[path.name])
         if not neighbors:
             continue
@@ -93,16 +117,16 @@ def neighbor_purity_at_k(
     return float(np.mean(purities)) if purities else 0.0
 
 
-def plot_confusion_matrix(cm: np.ndarray, classes: list[str], out_path: Path) -> None:
+def plot_confusion_matrix(cm: np.ndarray, classes: list[str], out_path: Path, title: str) -> None:
     fig, ax = plt.subplots(figsize=(5, 4))
-    im = ax.imshow(cm, cmap="Blues")
+    im = ax.imshow(cm, cmap="Greens")
     ax.set_xticks(range(len(classes)))
     ax.set_yticks(range(len(classes)))
     ax.set_xticklabels(classes, rotation=45, ha="right")
     ax.set_yticklabels(classes)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("True")
-    ax.set_title("Confusion matrix (LOOCV)")
+    ax.set_title(title)
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
             ax.text(j, i, str(cm[i, j]), ha="center", va="center", color="black")
@@ -134,10 +158,12 @@ def plot_umap(vectors: np.ndarray, labels: list[str], out_path: Path) -> None:
     plt.close(fig)
 
 
-def main(k: int, vote_method: str) -> None:
+def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
     paths, labels = discover_refs()
     classes = sorted(set(labels))
-    logger.info(f"Loaded {len(paths)} reference images across {len(classes)} classes: {classes}")
+    per_class_counts = {c: labels.count(c) for c in classes}
+    logger.info(f"Loaded {len(paths)} reference images: {per_class_counts}")
+    logger.info(f"Mode: {mode} | k={k} | vote={vote_method} | alpha={alpha}")
 
     embedder = FashionClipEmbedder(model_name=settings.fashion_clip_model)
     store = TrendQdrantStore(
@@ -151,17 +177,37 @@ def main(k: int, vote_method: str) -> None:
             "Qdrant collection is empty. Run scripts/embed_reference_corpus.py first."
         )
 
+    # Load attributes for text/hybrid modes; build query_text per ref
+    attrs_by_filename = load_attributes_by_filename()
+    if mode in {"text", "hybrid"}:
+        if not attrs_by_filename:
+            raise RuntimeError(
+                f"mode={mode!r} requires {ATTRIBUTES_PATH.name}. "
+                "Run scripts/normalize_reference_corpus.py first."
+            )
+        missing = [p.name for p in paths if p.name not in attrs_by_filename]
+        if missing:
+            raise RuntimeError(
+                f"mode={mode!r}: {len(missing)} images lack attributes records "
+                f"(e.g. {missing[:3]}). Run scripts/normalize_reference_corpus.py."
+            )
+
     # --- LOOCV ---
     preds: list[str] = []
     confidences: list[float] = []
-    for path, true_label in zip(paths, labels):
+    for path, _ in zip(paths, labels):
+        query_text = None
+        if mode in {"text", "hybrid"}:
+            query_text = attributes_to_text(attrs_by_filename[path.name])
         prediction = predict_trend(
             image_path=path,
             embedder=embedder,
             store=store,
+            query_text=query_text,
             k=k,
             vote_method=vote_method,
-            search_mode="image",  # INTERIM: image-only until path-B (caption_vec) ships
+            search_mode=mode,
+            alpha=alpha,
             exclude_filenames=[path.name],
         )
         preds.append(prediction.trend_pred)
@@ -181,7 +227,7 @@ def main(k: int, vote_method: str) -> None:
     ece = expected_calibration_error(conf_arr, correct_arr)
     purity = neighbor_purity_at_k(paths, labels, embedder, store, k=k)
 
-    # --- Embedding-space sanity ---
+    # --- Embedding-space sanity (image side) ---
     all_vectors = embedder.embed_images(paths)
     label_to_int = {c: i for i, c in enumerate(classes)}
     silhouette = float(
@@ -195,17 +241,32 @@ def main(k: int, vote_method: str) -> None:
     logger.info(f"Silhouette:     {silhouette:.3f}")
     logger.info(f"Confusion (rows=true, cols=pred): \n{cm}")
 
+    run_name_parts = [f"loocv-k{k}", mode, vote_method]
+    if mode == "hybrid":
+        run_name_parts.append(f"a{alpha:.2f}")
+    run_name = "-".join(run_name_parts)
+
+    params = {
+        "embedding_model": settings.fashion_clip_model,
+        "k": k,
+        "distance": "cosine",
+        "vote_method": vote_method,
+        "search_mode": mode,
+        "alpha": alpha if mode == "hybrid" else None,
+        "n_refs": len(paths),
+        **{f"n_{cls}": cnt for cls, cnt in per_class_counts.items()},
+    }
+    tags = {
+        "protocol": "leave-one-out",
+        "classes": ",".join(classes),
+        "ref_corpus_tag": "2026-04-25",
+    }
+
     with track_experiment(
         experiment_name="trend-classifier-eval",
-        run_name=f"loocv-k{k}-{vote_method}",
-        params={
-            "embedding_model": settings.fashion_clip_model,
-            "k": k,
-            "distance": "cosine",
-            "vote_method": vote_method,
-            "n_refs": len(paths),
-        },
-        tags={"protocol": "leave-one-out", "classes": ",".join(classes)},
+        run_name=run_name,
+        params=params,
+        tags=tags,
     ) as mlflow_tracker:
         mlflow_tracker.log_metric("accuracy", accuracy)
         mlflow_tracker.log_metric("macro_f1", macro_f1)
@@ -221,7 +282,7 @@ def main(k: int, vote_method: str) -> None:
             tmp = Path(tmpdir)
             cm_path = tmp / "confusion_matrix.png"
             umap_path = tmp / "umap.png"
-            plot_confusion_matrix(cm, classes, cm_path)
+            plot_confusion_matrix(cm, classes, cm_path, title=f"Confusion ({mode}, LOOCV)")
             plot_umap(all_vectors, labels, umap_path)
             mlflow_tracker.log_artifact(str(cm_path))
             if umap_path.exists():
@@ -237,5 +298,17 @@ if __name__ == "__main__":
         default="shepard",
         help="Voting method: count-based majority or similarity-weighted (Shepard)",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["image", "text", "hybrid"],
+        default="image",
+        help="Search mode: image-only, text-only, or hybrid (image+text)",
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=0.6,
+        help="Weight on image score in hybrid mode; text gets (1-alpha). Ignored for non-hybrid.",
+    )
     args = parser.parse_args()
-    main(k=args.k, vote_method=args.vote)
+    main(k=args.k, vote_method=args.vote, mode=args.mode, alpha=args.alpha)
