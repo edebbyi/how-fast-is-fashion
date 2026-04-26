@@ -10,6 +10,15 @@ Flow:
         -> Vision LLM (OpenRouter, traced; image attached to Langfuse trace)
         -> normalization/outputs/YYYY-MM_normalized.jsonl
         -> normalization/review/YYYY-MM_review.csv
+
+Also exports for the retrieval pipeline (§3.5):
+    - attributes_to_text(attrs): deterministic flatten of an attribute JSON
+      record into a fashion-CLIP-compatible caption string. Used on BOTH the
+      reference corpus AND query products so text-tower comparisons are
+      same-distribution on both sides (no modality + no format gap).
+    - normalize_image(image_path): single-image variant of label_record that
+      doesn't require the monthly folder structure -- used to label reference
+      images at any path on disk.
 """
 
 from __future__ import annotations
@@ -230,3 +239,177 @@ def _generate_review_csv(month_str: str) -> None:
         df = pd.json_normalize(records)
         df.to_csv(review_path, index=False)
         logger.info(f"{month_str}: review CSV saved to {review_path}")
+
+
+# ---------------------------------------------------------------------------
+# Retrieval-pipeline helpers (§3.5)
+# ---------------------------------------------------------------------------
+
+
+def _values(attrs: dict, field: str) -> list[str]:
+    """Pull values list from a normalized attribute field, defaulting to [].
+
+    Each field in the normalized JSON is shaped {value: [...], source, confidence}.
+    """
+    field_obj = attrs.get(field) or {}
+    values = field_obj.get("value") or []
+    return [str(v).replace("_", " ") for v in values if v]
+
+
+def attributes_to_text(attrs: dict) -> str:
+    """Deterministic flatten: attribute JSON -> fashion-CLIP-compatible caption.
+
+    Same function MUST be used on both reference and query sides so text-tower
+    embeddings live in the same surface-form distribution. See ARCHITECTURE.md
+    §3.5 "Hybrid search" for the rationale.
+
+    Output shape: "{adjectives} {length}-length {sleeve} {head_noun}, {neckline} neckline, {details}"
+
+    Example:
+        {"category": {"value": ["outerwear"], ...},
+         "subcategory": {"value": ["sweater"], ...},
+         "color_profile": {"value": ["yellow"], ...},
+         "silhouette": {"value": ["oversized", "flowy"], ...},
+         "sleeve_style": {"value": ["long_sleeve"], ...},
+         "neckline": {"value": ["crew"], ...},
+         "length": {"value": ["hip"], ...}}
+        -> "yellow oversized flowy hip-length long sleeve sweater, crew neckline"
+
+    Empty fields are skipped. Stop-word patterns (e.g., "solid" pattern) are
+    kept since the same value will appear on both sides.
+    """
+    # Adjective stack: surface-level visual descriptors
+    adjectives: list[str] = []
+    for field in ("color_profile", "pattern", "silhouette", "material"):
+        adjectives.extend(_values(attrs, field))
+
+    # Length as "X-length" so "hip" -> "hip-length"
+    lengths = [f"{v}-length" for v in _values(attrs, "length")]
+
+    # Sleeve style values are self-contained (e.g. "long sleeve", "sleeveless")
+    sleeves = _values(attrs, "sleeve_style")
+
+    # Head noun: prefer specific subcategory, fall back to category
+    head_candidates = _values(attrs, "subcategory") or _values(attrs, "category")
+    head = head_candidates[0] if head_candidates else "garment"
+
+    # Suffix clauses: details that read more naturally after the head noun
+    suffix_parts: list[str] = []
+    necklines = _values(attrs, "neckline")
+    if necklines:
+        suffix_parts.append(f"{' '.join(necklines)} neckline")
+    details = _values(attrs, "details")
+    if details:
+        suffix_parts.append(", ".join(details))
+
+    main = " ".join(filter(None, adjectives + lengths + sleeves + [head])).strip()
+    if suffix_parts:
+        return f"{main}, {', '.join(suffix_parts)}"
+    return main
+
+
+def normalize_image(
+    image_path: str | Path,
+    *,
+    record_id: str | None = None,
+    product_name: str = "",
+    description: str = "",
+    declared_category: str = "",
+    declared_color: str = "",
+    composition: str = "",
+    model: str | None = None,
+    prompt_label: str = "production",
+    trace: bool = True,
+) -> dict | None:
+    """Run the §3.2 teacher-labeling prompt on an arbitrary image path.
+
+    Decoupled from the monthly folder structure used by `normalize_month`.
+    Used by the retrieval pipeline to label reference images that live under
+    `data/02_reference_corpus/labeled/{trend}/`.
+
+    Args:
+        image_path: Path to any image file on disk.
+        record_id: Identifier for the resulting record (defaults to filename stem).
+        product_name / description / etc.: Optional retailer-text fields. For
+            reference images these are typically empty since refs come from
+            mood boards, not retail listings -- the LLM falls back to vision.
+        model: OpenRouter model id; defaults to env OPEN_ROUTER_MODEL.
+        prompt_label: Langfuse label of the prompt version to fetch.
+        trace: Whether to log the call to Langfuse (default True).
+
+    Returns:
+        Parsed attribute JSON with `record_id`, `model`, `prompt_version`
+        stamped on. Same schema as `normalize_month` outputs. Returns None on
+        LLM failure (logged + skipped, not raised).
+    """
+    from openai import OpenAI
+
+    image_path = Path(image_path)
+    if not image_path.exists():
+        logger.warning(f"normalize_image: {image_path} does not exist, skipping")
+        return None
+
+    if model is None:
+        model = settings.open_router_model
+
+    if record_id is None:
+        record_id = image_path.stem
+
+    tracer = LLMTracer() if trace else None
+    prompt_obj = (tracer or LLMTracer()).get_prompt(
+        settings.langfuse_prompt_teacher_labeling, label=prompt_label
+    )
+    client = OpenAI(
+        api_key=settings.open_router_api_key,
+        base_url=settings.open_router_base_url,
+    )
+
+    compiled_prompt = prompt_obj.compile(
+        product_name=product_name,
+        description=description,
+        declared_category=declared_category,
+        declared_color=declared_color,
+        composition=composition,
+    )
+    image_url = _image_data_url(image_path)
+    messages = _build_messages(compiled_prompt, image_url)
+
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0.1,
+            response_format={"type": "json_object"},
+        )
+    except Exception as e:
+        logger.error(f"{record_id}: LLM call failed: {e}")
+        return None
+
+    raw_output = response.choices[0].message.content
+    try:
+        parsed = json.loads(raw_output)
+    except json.JSONDecodeError as e:
+        logger.error(f"{record_id}: JSON parse failed: {e} -- raw: {raw_output[:200]}")
+        return None
+
+    if tracer is not None:
+        tracer.trace_llm_call(
+            name="reference_labeling",
+            prompt_input=messages,
+            completion=raw_output,
+            model=model,
+            prompt=prompt_obj,
+            metadata={
+                "record_id": record_id,
+                "image_path": str(image_path),
+                "source": "reference_corpus",
+            },
+            input_tokens=getattr(response.usage, "prompt_tokens", None),
+            output_tokens=getattr(response.usage, "completion_tokens", None),
+        )
+        tracer.flush()
+
+    parsed["record_id"] = record_id
+    parsed["model"] = model
+    parsed["prompt_version"] = f"{settings.langfuse_prompt_teacher_labeling}@v{prompt_obj.version}"
+    return parsed
