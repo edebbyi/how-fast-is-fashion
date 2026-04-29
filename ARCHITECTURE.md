@@ -925,6 +925,16 @@ Prefer a complete v1 with constrained coverage over a wider but partial build.
 - New `configs/trend_rules.yaml` defines the 12-trend taxonomy + closed `details` vocabulary + rule definitions.
 - Notebook prompt-iteration lab in `notebooks/02_attributes_and_model.ipynb` uses the perception-only LLM prompt.
 
+### v7 (2026-04-29, later) — Reference set expanded from 59 to 67 images
+
+- Added 8 reference images: 3 to `office_siren`, 5 to `quiet_luxury`. No new `mob_wife` images this round.
+- Counts after this expansion: `mob_wife` 18, `office_siren` 24, `quiet_luxury` 25, `basics` 0 (still empty by design). Total 67.
+- Pipeline ran end-to-end: LLM teacher labeling on the 8 new images (idempotent, skipped the 59 existing ones), re-embedded all 67 to Qdrant, re-ran the 3-mode eval and α-sensitivity sweep.
+- v7 metrics on 67 images at hybrid α=0.95: accuracy **0.896** (was 0.915), macro-F1 0.895 (was 0.915), ECE **0.060** (was 0.077, calibration improved).
+- Class imbalance shows up: `mob_wife` recall fell from 0.89 to 0.83 even though we didn't change its references. The new `office_siren` and `quiet_luxury` images filled out their neighborhoods and pulled some borderline `mob_wife` items toward `office_siren`. Adding `mob_wife` reference images is the most direct fix.
+- The image-only baseline improved (0.831 → 0.866). The text-only baseline dropped (0.814 → 0.731) because the new quiet_luxury images share many attribute tokens (white wide-leg pants, button-down shirt) and the text descriptions become less discriminating. The hybrid lift over image-only narrowed from +8.4pp to +3.0pp.
+- Suggested open-set threshold ticked up from 0.651 to 0.663 (the helper auto-retunes from the LOOCV similarity distribution).
+
 ### v6 (2026-04-29) — Taxonomy hygiene + open-set threshold helper
 
 - **Naming consistency.** `mobwife` (folder) renamed to `mob_wife` to match the `configs/trend_rules.yaml` key. Folder, `attributes.jsonl` records, notebook references, and prose in this doc all use `mob_wife` now. Image filenames inside `mob_wife/` keep their original names (file-level normalization is a separate cleanup); only the folder-as-trend-label changed.
