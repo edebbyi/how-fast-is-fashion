@@ -310,7 +310,7 @@ The LLM in the perception stage does NOT score trends. Trend interpretation is d
 - One subfolder per trend under `data/02_reference_corpus/labeled/`
 - Folder name IS the trend label (must match `configs/trend_rules.yaml` taxonomy)
 - 10+ images per trend recommended; more refs → better neighborhood purity
-- v1 ships with 3 reference trends: `mobwife` (10), `office_siren` (13), `quiet_luxury` (12). Taxonomy will expand toward the 12-trend `configs/trend_rules.yaml` list as references are curated.
+- v1 ships with 3 reference trends: `mob_wife` (10), `office_siren` (13), `quiet_luxury` (12). Taxonomy will expand toward the 12-trend `configs/trend_rules.yaml` list as references are curated.
 
 **Qdrant schema**
 - Collection name: `settings.qdrant_collection` (default `trends_ref_v1`)
@@ -336,7 +336,7 @@ The LLM in the perception stage does NOT score trends. Trend interpretation is d
 - Calibration: Expected Calibration Error (ECE)
 - Retrieval quality: neighbor purity @ k, silhouette score (cosine)
 - Artifacts: confusion matrix PNG, UMAP of the embedding space
-- v5 baseline (59 refs, k=5, shepard, fashion-CLIP, hybrid α=0.95): accuracy 0.915, macro-F1 0.915, per-class recall {mobwife 0.89, office_siren 0.95, quiet_luxury 0.90}
+- v5 baseline (59 refs, k=5, shepard, fashion-CLIP, hybrid α=0.95): accuracy 0.915, macro-F1 0.915, per-class recall {mob_wife 0.89, office_siren 0.95, quiet_luxury 0.90}
 - v4 baseline for comparison (35 refs, image-only): accuracy 0.80, macro-F1 0.80, ECE 0.137, purity@5 0.63, silhouette 0.077
 
 **Suggested output schema (appended to normalized product records)**
@@ -349,7 +349,7 @@ The LLM in the perception stage does NOT score trends. Trend interpretation is d
     "matched_refs": [
       {"filename": "office-13.jpg", "trend": "office_siren", "score": 0.77},
       {"filename": "office-5.jpg",  "trend": "office_siren", "score": 0.66},
-      {"filename": "mobwife-2.webp","trend": "mobwife",       "score": 0.70}
+      {"filename": "mobwife-2.webp","trend": "mob_wife",       "score": 0.70}
     ],
     "open_set_unknown": false,
     "model": "patrickjohncyh/fashion-clip",
@@ -718,7 +718,7 @@ how-fast-is-fashion/
 │   ├── 01_data_audit/                 # monthly records, normalization outputs
 │   ├── 02_reference_corpus/
 │   │   ├── labeled/                   # trend-labeled reference images, by class
-│   │   │   ├── mobwife/
+│   │   │   ├── mob_wife/
 │   │   │   ├── office_siren/
 │   │   │   └── quiet_luxury/
 │   │   └── qdrant/                    # local on-disk Qdrant DB (vector store)
@@ -925,6 +925,16 @@ Prefer a complete v1 with constrained coverage over a wider but partial build.
 - New `configs/trend_rules.yaml` defines the 12-trend taxonomy + closed `details` vocabulary + rule definitions.
 - Notebook prompt-iteration lab in `notebooks/02_attributes_and_model.ipynb` uses the perception-only LLM prompt.
 
+### v6 (2026-04-29) — Taxonomy hygiene + open-set threshold helper
+
+- **Naming consistency.** `mobwife` (folder) renamed to `mob_wife` to match the `configs/trend_rules.yaml` key. Folder, `attributes.jsonl` records, notebook references, and prose in this doc all use `mob_wife` now. Image filenames inside `mob_wife/` keep their original names (file-level normalization is a separate cleanup); only the folder-as-trend-label changed.
+- **`basics` positive class added.** New folder `data/02_reference_corpus/labeled/basics/` (empty for now). New entry in `configs/trend_rules.yaml` under `trends:` with empty `rule.any_of` (intentional — `basics` is assigned by §3.5 retrieval, not the §3.6 rule grammar, since the rule grammar can't express "absence of trend signals"). Lets unbranded staples receive a positive label instead of falling into `unmapped`.
+- **Trim active taxonomy to what's supported.** `trends:` block now contains exactly four classes (`mob_wife`, `office_siren`, `quiet_luxury`, `basics`). The other nine were moved to a new top-level `deferred_trends:` block: rules and discriminators are preserved, but they're not loaded as active classes. Promote back to `trends:` once at least 15 reference images per class are curated. `trend_rule_version` bumped to `v2`.
+- **Closed `details` vocabulary audit.** Scanned all 24 monthly normalizer outputs (2024-02 through 2026-01). Five of 34 configured tokens fired in real outputs (`gathered`, `lace_trim`, `gold_hardware`, `bow`, `gathered_volume`). Two genuine new tokens added to the vocab: `belted` (in `structural` cluster) and `rhinestone_trim` (in `glamoratti_hardware` cluster). Two LLM bugs found — the LLM occasionally emits cluster names (`sheer_lace_y2k`, `glamoratti_hardware`) as if they were tokens; this is a prompt-side issue tracked separately, not a vocab bug.
+- **Open-set threshold helper.** `scripts/eval_trend_classifier.py` now computes a suggested threshold from the 5th percentile of correct-prediction max-similarity in LOOCV. Logged to MLflow as `suggested_open_set_threshold` and printed at the end of every eval run. Re-tunes automatically as new trends are added (the similarity distribution shifts when the class set changes). Below this threshold, `predict_trend` flags the result as `open_set_unknown`. v6 baseline: **0.651** at hybrid α=0.95.
+- **Stale `captions.yaml` removed** (path-A leftover; replaced by `attributes.jsonl` in path-B).
+- **Pipeline metrics unchanged** post-rename (accuracy 0.915, macro-F1 0.915, ECE 0.077 at hybrid α=0.95). The taxonomy work is structural; predictions and confusions are identical to v5.
+
 ### v5 (2026-04-25) — Hybrid retrieval (path-B) shipped, peak accuracy 0.915
 
 - §3.5 retrieval pipeline now uses fashion-CLIP's **dual encoders** end-to-end. Every Qdrant point carries `image_vec` (vision tower on the photo) AND `caption_vec` (text tower on the LLM-normalized attribute description). At inference, query image and query attributes are embedded by the same dual towers; two parallel cosine searches run; scores are fused with weight α before voting.
@@ -936,7 +946,7 @@ Prefer a complete v1 with constrained coverage over a wider but partial build.
 - `scripts/eval_trend_classifier.py` adds `--mode {image, text, hybrid}` and `--alpha`. Each invocation logs a separate MLflow run with `search_mode` and `alpha` as params.
 - v5 baseline metrics (59 refs, k=5, Shepard, LOOCV):
 
-  | Mode | Accuracy | Macro F1 | ECE | mobwife recall | office recall | quiet recall |
+  | Mode | Accuracy | Macro F1 | ECE | mob_wife recall | office recall | quiet recall |
   |---|---|---|---|---|---|---|
   | image | 0.831 | 0.832 | 0.098 | 0.83 | 0.86 | 0.80 |
   | text | 0.814 | 0.813 | 0.098 | 0.89 | 0.86 | 0.70 |
@@ -953,11 +963,11 @@ Prefer a complete v1 with constrained coverage over a wider but partial build.
 - Two voting methods implemented: `majority` (count-based, ties broken by insertion order) and `shepard` (similarity-weighted; default — better-calibrated confidence, no arbitrary tie-breaks).
 - New scripts: `scripts/embed_reference_corpus.py` (one-shot ingestion), `scripts/eval_trend_classifier.py` (LOOCV + MLflow logging).
 - New MLflow experiment `trend-classifier-eval` with params (embedding_model, k, distance, vote_method, n_refs), metrics (accuracy, macro-F1, per-class P/R/F1, ECE, purity@k, silhouette), and artifacts (confusion matrix, UMAP).
-- v1 reference corpus: 3 trends, 35 images (`mobwife` 10, `office_siren` 13, `quiet_luxury` 12). Taxonomy will expand toward the 12-trend `configs/trend_rules.yaml` list as references are curated.
+- v1 reference corpus: 3 trends, 35 images (`mob_wife` 10, `office_siren` 13, `quiet_luxury` 12). Taxonomy will expand toward the 12-trend `configs/trend_rules.yaml` list as references are curated.
 - New `notebooks/03_trend_classification.ipynb` renders the pipeline with image outputs: per-class reference preview, LOOCV with both voting methods, sample query + top-5 neighbors side-by-side with color-coded correctness, confusion matrices, UMAP, reliability/calibration diagram.
 - Open-set detection wired in (`open_set_threshold` parameter); threshold tuning deferred until OOD product data is available.
 - Python 3.14 venv rebuilt on 3.13 to unblock `torch` installation; `pyproject.toml` bumped to `torch>=2.5` and added `torchvision`, `qdrant-client`, `umap-learn`, `matplotlib`.
-- v4 baseline metrics (35 refs, k=5, shepard): accuracy 0.80, macro-F1 0.80, ECE 0.137, purity@5 0.63, silhouette 0.077. office_siren is the cleanest signal (recall 0.92); mobwife is the weakest (recall 0.70) and would benefit most from more reference images.
+- v4 baseline metrics (35 refs, k=5, shepard): accuracy 0.80, macro-F1 0.80, ECE 0.137, purity@5 0.63, silhouette 0.077. office_siren is the cleanest signal (recall 0.92); mob_wife is the weakest (recall 0.70) and would benefit most from more reference images.
 
 ### Deferred to v2: nested `product` + `outfit_components` schema
 
@@ -994,8 +1004,8 @@ Delivered in v4 but with a different architecture than originally planned. Summa
 | Torch 2.2 / transformers 4.38 | Torch 2.11 / transformers 5.5 (bumped for Python 3.13 wheels) |
 
 **Remaining v4 follow-on work:**
-1. **Expand reference corpus** beyond 3 trends toward the 12-trend `configs/trend_rules.yaml` taxonomy. Per trend: aim for 15–25 reference images; mobwife (currently weakest at 10 refs) is the first priority.
+1. **Expand reference corpus** beyond 3 trends toward the 12-trend `configs/trend_rules.yaml` taxonomy. Per trend: aim for 15–25 reference images; mob_wife (currently weakest at 10 refs) is the first priority.
 2. **DuckDB integration**: extend `src/fashion_forensics/db.py` with a `trend_retrieval` view and a `merged` view that joins items + teacher_labels + trend_retrieval predictions.
 3. **Open-set threshold tuning**: collect a held-out OOD product set, plot the max-similarity distribution for in-distribution vs OOD queries, compute AUROC, pick the threshold that hits a target FPR@TPR=95.
 4. **Rule-engine agreement eval**: on the product inventory, compare rule engine (§3.6) predictions with retrieval (§3.5) predictions. Disagreements are the candidate set for hand-labeling the gold set used in §3.4 / §3.10.
-5. **Hybrid image+text retrieval**: fashion-CLIP has a text encoder too. Embed the LLM-normalized product description with the text tower, fuse image+text similarity scores at query time. Potential accuracy lift on trends where text cues matter (e.g., material-driven classes like mobwife).
+5. **Hybrid image+text retrieval**: fashion-CLIP has a text encoder too. Embed the LLM-normalized product description with the text tower, fuse image+text similarity scores at query time. Potential accuracy lift on trends where text cues matter (e.g., material-driven classes like mob_wife).

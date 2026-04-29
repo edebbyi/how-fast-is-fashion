@@ -195,6 +195,7 @@ def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
     # --- LOOCV ---
     preds: list[str] = []
     confidences: list[float] = []
+    max_sims: list[float] = []
     for path, _ in zip(paths, labels):
         query_text = None
         if mode in {"text", "hybrid"}:
@@ -212,6 +213,9 @@ def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
         )
         preds.append(prediction.trend_pred)
         confidences.append(prediction.confidence)
+        # Track best-neighbor similarity for the open-set threshold suggestion
+        max_sim = max((n["score"] for n in prediction.matched_refs), default=0.0)
+        max_sims.append(max_sim)
 
     preds_arr = np.array(preds)
     labels_arr = np.array(labels)
@@ -234,12 +238,27 @@ def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
         silhouette_score(all_vectors, [label_to_int[lbl] for lbl in labels], metric="cosine")
     )
 
+    # Suggest an open-set threshold from the distribution of correct-prediction
+    # max-neighbor similarities. The 5th percentile keeps 95% of true-positive
+    # neighborhoods above the threshold; products below are flagged as
+    # `open_set_unknown`. Re-run after each taxonomy expansion since the
+    # similarity distribution shifts as more reference classes are added.
+    max_sims_arr = np.array(max_sims)
+    correct_max_sims = max_sims_arr[correct_arr == 1]
+    suggested_threshold = (
+        float(np.percentile(correct_max_sims, 5)) if len(correct_max_sims) else 0.0
+    )
+
     logger.info(f"Accuracy:       {accuracy:.3f}")
     logger.info(f"Macro F1:       {macro_f1:.3f}")
     logger.info(f"ECE:            {ece:.3f}")
     logger.info(f"Purity@{k}:       {purity:.3f}")
     logger.info(f"Silhouette:     {silhouette:.3f}")
     logger.info(f"Confusion (rows=true, cols=pred): \n{cm}")
+    logger.info(
+        f"Suggested open-set threshold (5th percentile of correct-prediction "
+        f"max-similarity): {suggested_threshold:.3f}"
+    )
 
     run_name_parts = [f"loocv-k{k}", mode, vote_method]
     if mode == "hybrid":
@@ -259,7 +278,7 @@ def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
     tags = {
         "protocol": "leave-one-out",
         "classes": ",".join(classes),
-        "ref_corpus_tag": "2026-04-25",
+        "ref_corpus_tag": "2026-04-29",
     }
 
     with track_experiment(
@@ -273,6 +292,7 @@ def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
         mlflow_tracker.log_metric("ece", ece)
         mlflow_tracker.log_metric(f"neighbor_purity_at_{k}", purity)
         mlflow_tracker.log_metric("silhouette_cosine", silhouette)
+        mlflow_tracker.log_metric("suggested_open_set_threshold", suggested_threshold)
         for cls in classes:
             mlflow_tracker.log_metric(f"precision_{cls}", report[cls]["precision"])
             mlflow_tracker.log_metric(f"recall_{cls}", report[cls]["recall"])

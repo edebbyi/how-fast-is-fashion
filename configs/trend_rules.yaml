@@ -1,21 +1,34 @@
 # Trend rule engine config (per ARCHITECTURE.md §3.6)
 #
-# Each trend lists:
-#   peak_years        — when the trend was dominant (informational; rules themselves are time-agnostic)
-#   discriminating_details — the subset of the closed `details` vocab that maps to this trend
-#   rule              — the deterministic match rule (used by trend_rule_engine)
+# This file has three sections:
+#   trends            — actively supported. Reference images exist in
+#                       data/02_reference_corpus/labeled/{trend}/. The retrieval
+#                       pipeline (§3.5) and rule engine (§3.6) both load these.
+#   deferred_trends   — taxonomy entries with rules but no reference images yet.
+#                       Promote to `trends` once at least 15 reference images
+#                       per class are curated.
+#   excluded_trends   — explicitly rejected. Either over-match or have no
+#                       garment-level discriminators.
+#
+# Each entry under `trends` lists:
+#   peak_years              when the trend was dominant (informational; rules
+#                           themselves are time-agnostic)
+#   discriminating_details  the subset of the closed `details` vocab that maps
+#                           to this trend
+#   rule                    the deterministic match rule (used by trend_rule_engine)
 #
 # RULE SEMANTICS:
-#   - `any_of: [...]`   — item matches the trend when ANY block in the list matches
+#   - `any_of: [...]`   item matches the trend when ANY block in the list matches
 #   - within a block, all attribute conditions must be satisfied (implicit AND)
 #   - attribute conditions accept either a scalar (exact match) or a list (membership)
 #   - special key `details_any_of` matches if the item's details contains ANY of the listed tokens
 #   - special key `details_all_of` matches if the item's details contains ALL of the listed tokens
 #
-# An item that matches no trend → `unmapped` (per ARCHITECTURE.md §3.6).
-# An item may match multiple trends; that's fine — the aggregator handles overlap.
+# An item that matches no trend rule goes to `unmapped` (per §3.6). The
+# `basics` class is different: it's a positive label assigned by §3.5
+# retrieval (k-NN against labeled basics references), not by a rule.
 
-trend_rule_version: v1
+trend_rule_version: v2
 
 trends:
 
@@ -55,6 +68,27 @@ trends:
         - silhouette: fitted
           material: [satin, mesh]
           color_profile: [black, grey, brown]
+
+  basics:
+    name: Basics / Wardrobe Staples
+    peak_years: []  # always present — not a trend, the absence of a trend
+    description: >
+      Plain unbranded staples (basic tees, plain jeans, simple knits, neutral
+      sweaters). Defined positively here so unbranded items have a class to
+      land in instead of being dropped into `unmapped`. Assigned by §3.5
+      retrieval (k-NN against labeled basics references), NOT by a rule —
+      the rule grammar can't express "absence of trend signals." Empty
+      `rule` block on purpose.
+    discriminating_details: []
+    rule:
+      any_of: []  # intentional — basics is a positive class for §3.5, not §3.6
+
+
+# Trends below have rules but no reference images yet. Promote into `trends:`
+# above once at least 15 reference images per class are curated under
+# data/02_reference_corpus/labeled/{trend}/. Keep rules ready so the rule
+# engine layer can pick them up the moment they're promoted.
+deferred_trends:
 
   coquette_balletcore:
     name: Coquette / Balletcore
@@ -166,6 +200,19 @@ trends:
 # Closed `details` vocabulary — the union of all trends' discriminating_details.
 # This is what the teacher labeling LLM should produce (no other tokens).
 # Grouped by trend cluster for prompt readability.
+#
+# AUDIT against actual normalizer output across 24 monthly JSONLs (2024-02
+# through 2026-01) on Zara womenswear:
+#   - 5 of 34 configured tokens fired in real outputs: gathered, lace_trim,
+#     gold_hardware, bow, gathered_volume. The rest never appeared because
+#     Zara womenswear at v1 sample size skews heavily toward basics, where
+#     trend-distinctive details are rare.
+#   - 2 new tokens the LLM produced that weren't in the configured vocab:
+#     `belted` (added to `structural` below) and `rhinestone_trim` (added
+#     to `glamoratti_hardware` below).
+#   - 2 LLM bugs: the LLM occasionally emits cluster names (`sheer_lace_y2k`,
+#     `glamoratti_hardware`) as if they were tokens. This is a prompt-side
+#     issue tracked separately.
 details_vocab:
 
   romantic_coquette:
@@ -197,6 +244,7 @@ details_vocab:
     - padded_shoulder
     - statement_button
     - metallic_finish
+    - rhinestone_trim  # added v2 from audit
 
   nautical_prep:
     - sailor_collar
@@ -212,6 +260,7 @@ details_vocab:
   structural:
     - peplum_hem
     - drop_waist
+    - belted  # added v2 from audit (generic structural; appears across multiple trends)
 
   quiet_luxury:
     - structured_shoulder
