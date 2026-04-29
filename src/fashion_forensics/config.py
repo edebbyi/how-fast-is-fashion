@@ -37,7 +37,6 @@ class Settings(BaseSettings):
     qdrant_collection: str = Field(
         default="trends_ref_v2"
     )  # v2 adds named vectors (image + caption)
-    reference_captions_path: str = Field(default="data/02_reference_corpus/captions.yaml")
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

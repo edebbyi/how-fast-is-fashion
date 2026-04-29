@@ -62,7 +62,7 @@ python3.13 -m venv .venv
 cp .env.example .env
 
 # 3. Labeled reference images live under:
-#    data/02_reference_corpus/labeled/{mobwife,office_siren,quiet_luxury}/
+#    data/02_reference_corpus/labeled/{mob_wife,office_siren,quiet_luxury}/
 #    Drop more images into any subfolder; the pipeline picks them up automatically.
 
 # 4. Embed the reference corpus into local Qdrant
