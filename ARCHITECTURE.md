@@ -925,6 +925,16 @@ Prefer a complete v1 with constrained coverage over a wider but partial build.
 - New `configs/trend_rules.yaml` defines the 12-trend taxonomy + closed `details` vocabulary + rule definitions.
 - Notebook prompt-iteration lab in `notebooks/02_attributes_and_model.ipynb` uses the perception-only LLM prompt.
 
+### v7 (2026-04-29, later) — Reference set expanded from 59 to 74 images
+
+- Added 15 reference images across two batches: first round added 3 `office_siren` + 5 `quiet_luxury` (total 67). Then 7 `mob_wife` were added to rebalance.
+- Counts after this expansion: `mob_wife` 25, `office_siren` 24, `quiet_luxury` 25, `basics` 0 (still empty by design). Total 74. Classes are now roughly balanced.
+- Pipeline ran end-to-end after each batch: LLM teacher labeling (idempotent, only the new images each time), re-embedded all references to Qdrant, re-ran the 3-mode eval and α-sensitivity sweep.
+- v7 metrics on 74 images at hybrid α=0.95: accuracy **0.878** (was 0.915 on 59), macro-F1 0.878, ECE **0.049** (was 0.077, calibration improved noticeably).
+- Per-class recall at hybrid α=0.95: mob_wife **0.88** (was 0.89, held up after the rebalance), office_siren **0.92** (was 0.95), quiet_luxury **0.84** (was 0.90). The classes are now more uniformly balanced rather than office_siren dominating.
+- Image-only baseline held steady (0.831 → 0.865). Text-only baseline dropped (0.814 → 0.689) because the larger reference set produces many similar attribute tokens (white wide-leg pants, button-down shirts, black tailored pieces) and text descriptions are less discriminating. The hybrid lift over image-only narrowed from +8.4pp to +1.3pp at this scale, but ECE improved 0.077 → 0.049 — predictions are more honest.
+- Suggested open-set threshold settled at 0.651 (auto-tuned from LOOCV similarity distribution).
+
 ### v6 (2026-04-29) — Taxonomy hygiene + open-set threshold helper
 
 - **Naming consistency.** `mobwife` (folder) renamed to `mob_wife` to match the `configs/trend_rules.yaml` key. Folder, `attributes.jsonl` records, notebook references, and prose in this doc all use `mob_wife` now. Image filenames inside `mob_wife/` keep their original names (file-level normalization is a separate cleanup); only the folder-as-trend-label changed.
