@@ -12,12 +12,23 @@ fall back to using image_vec for caption_vec (warned), which keeps the
 collection valid for image-only mode evaluation but disables text/hybrid
 modes for those points.
 
+Embedding model:
+  --embedding-model HF model id (default: fashion-CLIP). Use
+                    openai/clip-vit-base-patch32 for the vanilla-CLIP
+                    baseline.
+  --collection      Qdrant collection name. Pair with --embedding-model so
+                    different models get their own collections.
+
 Usage:
     .venv/bin/python scripts/embed_reference_corpus.py
+    .venv/bin/python scripts/embed_reference_corpus.py \\
+        --embedding-model openai/clip-vit-base-patch32 \\
+        --collection trends_ref_v2_vanilla
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -62,7 +73,7 @@ def load_attributes_by_filename() -> dict[str, dict]:
     return out
 
 
-def main() -> None:
+def main(embedding_model: str, collection: str) -> None:
     refs_by_trend = discover_reference_images()
     if not refs_by_trend:
         raise RuntimeError(f"No labeled images found under {LABELED_ROOT}")
@@ -72,8 +83,10 @@ def main() -> None:
 
     attrs_by_filename = load_attributes_by_filename()
     logger.info(f"Loaded {len(attrs_by_filename)} attribute records from {ATTRIBUTES_PATH.name}")
+    logger.info(f"Embedding model: {embedding_model}")
+    logger.info(f"Target collection: {collection}")
 
-    embedder = FashionClipEmbedder(model_name=settings.fashion_clip_model)
+    embedder = FashionClipEmbedder(model_name=embedding_model)
 
     all_paths: list[Path] = []
     all_trends: list[str] = []
@@ -82,7 +95,7 @@ def main() -> None:
         all_trends.extend([trend] * len(paths))
 
     # --- Image embeddings ---
-    logger.info(f"Embedding {len(all_paths)} images with fashion-CLIP vision tower")
+    logger.info(f"Embedding {len(all_paths)} images with the image encoder")
     image_vectors = embedder.embed_images(all_paths)
 
     # --- Caption embeddings (parallel arrays, same order as all_paths) ---
@@ -106,7 +119,7 @@ def main() -> None:
     nonempty_indices = [i for i, c in enumerate(captions) if c]
     if nonempty_indices:
         logger.info(
-            f"Embedding {len(nonempty_indices)} captions with fashion-CLIP text tower "
+            f"Embedding {len(nonempty_indices)} captions with the text encoder "
             f"(sample: {captions[nonempty_indices[0]]!r})"
         )
         text_vectors_dense = embedder.embed_texts([captions[i] for i in nonempty_indices])
@@ -125,7 +138,7 @@ def main() -> None:
     # --- Qdrant upsert ---
     store = TrendQdrantStore(
         path=PROJECT_ROOT / settings.qdrant_path,
-        collection_name=settings.qdrant_collection,
+        collection_name=collection,
         embedding_dim=embedder.embedding_dim,
     )
     store.reset_collection()
@@ -144,8 +157,20 @@ def main() -> None:
         ]
     )
 
-    logger.info(f"Done. Collection '{settings.qdrant_collection}' now has {store.count()} points")
+    logger.info(f"Done. Collection '{collection}' now has {store.count()} points")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--embedding-model",
+        default=settings.fashion_clip_model,
+        help="HF model id (default: fashion-CLIP). Use openai/clip-vit-base-patch32 for vanilla.",
+    )
+    parser.add_argument(
+        "--collection",
+        default=settings.qdrant_collection,
+        help="Qdrant collection name. Pair with --embedding-model so models get separate stores.",
+    )
+    args = parser.parse_args()
+    main(embedding_model=args.embedding_model, collection=args.collection)
