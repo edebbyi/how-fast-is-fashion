@@ -9,6 +9,7 @@ neighbors, vote, compare to ground truth. Logs to MLflow:
   - silhouette score on the raw embeddings
   - neighbor purity @ k
   - 2D UMAP scatter of the embeddings
+  - bootstrap 95% CIs on accuracy, macro-F1, ECE (when --bootstrap is set)
 
 Search modes (one MLflow run per call):
   --mode image     pure visual k-NN (image_vec only)
@@ -16,10 +17,19 @@ Search modes (one MLflow run per call):
                    data/02_reference_corpus/attributes.jsonl
   --mode hybrid    fuse both with alpha (default 0.6 weight on image)
 
+Embedding model:
+  --embedding-model HF model id (default: Settings.fashion_clip_model).
+                    Use openai/clip-vit-base-patch32 for vanilla-CLIP baseline.
+  --collection      Qdrant collection name (default: Settings.qdrant_collection).
+                    Pair with a custom --embedding-model so different models
+                    get their own collections.
+
 Usage:
     .venv/bin/python scripts/eval_trend_classifier.py --mode image --k 5
-    .venv/bin/python scripts/eval_trend_classifier.py --mode text  --k 5
-    .venv/bin/python scripts/eval_trend_classifier.py --mode hybrid --k 5 --alpha 0.6
+    .venv/bin/python scripts/eval_trend_classifier.py --mode hybrid --k 5 --alpha 0.95 --bootstrap
+    .venv/bin/python scripts/eval_trend_classifier.py --mode hybrid --alpha 0.95 \\
+        --embedding-model openai/clip-vit-base-patch32 \\
+        --collection trends_ref_v2_vanilla --bootstrap
 """
 
 from __future__ import annotations
@@ -94,6 +104,47 @@ def expected_calibration_error(
     return float(ece)
 
 
+def bootstrap_metrics(
+    preds: np.ndarray,
+    labels: np.ndarray,
+    confidences: np.ndarray,
+    classes: list[str],
+    n_iterations: int = 10000,
+    random_seed: int = 42,
+) -> dict[str, dict[str, float]]:
+    """Bootstrap-resample (with replacement) to compute 95% CIs on key metrics.
+
+    Each iteration samples len(preds) indices with replacement, then recomputes
+    accuracy, macro-F1, and ECE on the resampled outcomes. CIs are the 2.5 and
+    97.5 percentiles across the iterations.
+
+    Returns:
+        {metric: {mean, lo, hi, ci_width}} for accuracy, macro_f1, ece.
+    """
+    rng = np.random.default_rng(random_seed)
+    n = len(preds)
+    accs, f1s, eces = [], [], []
+    for _ in range(n_iterations):
+        idx = rng.integers(0, n, size=n)
+        p, lbl, c = preds[idx], labels[idx], confidences[idx]
+        correct_resample = (p == lbl).astype(int)
+        accs.append(correct_resample.mean())
+        f1s.append(f1_score(lbl, p, labels=classes, average="macro", zero_division=0))
+        eces.append(expected_calibration_error(c, correct_resample))
+
+    def summarize(values: list[float]) -> dict[str, float]:
+        a = np.asarray(values)
+        lo = float(np.percentile(a, 2.5))
+        hi = float(np.percentile(a, 97.5))
+        return {"mean": float(a.mean()), "lo": lo, "hi": hi, "ci_width": hi - lo}
+
+    return {
+        "accuracy": summarize(accs),
+        "macro_f1": summarize(f1s),
+        "ece": summarize(eces),
+    }
+
+
 def neighbor_purity_at_k(
     paths: list[Path],
     labels: list[str],
@@ -158,17 +209,29 @@ def plot_umap(vectors: np.ndarray, labels: list[str], out_path: Path) -> None:
     plt.close(fig)
 
 
-def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
+def main(
+    k: int,
+    vote_method: str,
+    mode: str,
+    alpha: float,
+    embedding_model: str,
+    collection: str,
+    bootstrap: bool,
+    bootstrap_iterations: int,
+) -> None:
     paths, labels = discover_refs()
     classes = sorted(set(labels))
     per_class_counts = {c: labels.count(c) for c in classes}
     logger.info(f"Loaded {len(paths)} reference images: {per_class_counts}")
-    logger.info(f"Mode: {mode} | k={k} | vote={vote_method} | alpha={alpha}")
+    logger.info(
+        f"Mode: {mode} | k={k} | vote={vote_method} | alpha={alpha} | "
+        f"model={embedding_model} | collection={collection}"
+    )
 
-    embedder = FashionClipEmbedder(model_name=settings.fashion_clip_model)
+    embedder = FashionClipEmbedder(model_name=embedding_model)
     store = TrendQdrantStore(
         path=PROJECT_ROOT / settings.qdrant_path,
-        collection_name=settings.qdrant_collection,
+        collection_name=collection,
         embedding_dim=embedder.embedding_dim,
     )
 
@@ -260,25 +323,44 @@ def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
         f"max-similarity): {suggested_threshold:.3f}"
     )
 
+    # Bootstrap 95% CIs (optional — adds a few seconds for n=74, 10k iterations)
+    bootstrap_results = None
+    if bootstrap:
+        logger.info(f"Bootstrap: {bootstrap_iterations} iterations...")
+        bootstrap_results = bootstrap_metrics(
+            preds_arr, labels_arr, conf_arr, classes, n_iterations=bootstrap_iterations
+        )
+        for metric, stats in bootstrap_results.items():
+            logger.info(
+                f"  {metric:10s}  point={stats['mean']:.3f}  "
+                f"95% CI [{stats['lo']:.3f}, {stats['hi']:.3f}]  width={stats['ci_width']:.3f}"
+            )
+
     run_name_parts = [f"loocv-k{k}", mode, vote_method]
     if mode == "hybrid":
         run_name_parts.append(f"a{alpha:.2f}")
+    if embedding_model != settings.fashion_clip_model:
+        # Tag the run with a short model identifier so vanilla-CLIP runs are
+        # distinguishable from fashion-CLIP runs in the MLflow UI.
+        run_name_parts.append(embedding_model.split("/")[-1])
     run_name = "-".join(run_name_parts)
 
     params = {
-        "embedding_model": settings.fashion_clip_model,
+        "embedding_model": embedding_model,
+        "collection": collection,
         "k": k,
         "distance": "cosine",
         "vote_method": vote_method,
         "search_mode": mode,
         "alpha": alpha if mode == "hybrid" else None,
         "n_refs": len(paths),
+        "bootstrap_iterations": bootstrap_iterations if bootstrap else 0,
         **{f"n_{cls}": cnt for cls, cnt in per_class_counts.items()},
     }
     tags = {
         "protocol": "leave-one-out",
         "classes": ",".join(classes),
-        "ref_corpus_tag": "2026-04-29",
+        "ref_corpus_tag": "2026-04-30",
     }
 
     with track_experiment(
@@ -297,6 +379,10 @@ def main(k: int, vote_method: str, mode: str, alpha: float) -> None:
             mlflow_tracker.log_metric(f"precision_{cls}", report[cls]["precision"])
             mlflow_tracker.log_metric(f"recall_{cls}", report[cls]["recall"])
             mlflow_tracker.log_metric(f"f1_{cls}", report[cls]["f1-score"])
+        if bootstrap_results is not None:
+            for metric, stats in bootstrap_results.items():
+                for stat_name, value in stats.items():
+                    mlflow_tracker.log_metric(f"{metric}_bootstrap_{stat_name}", value)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -330,5 +416,35 @@ if __name__ == "__main__":
         default=0.6,
         help="Weight on image score in hybrid mode; text gets (1-alpha). Ignored for non-hybrid.",
     )
+    parser.add_argument(
+        "--embedding-model",
+        default=settings.fashion_clip_model,
+        help="HF model id (default: fashion-CLIP). Use openai/clip-vit-base-patch32 for vanilla.",
+    )
+    parser.add_argument(
+        "--collection",
+        default=settings.qdrant_collection,
+        help="Qdrant collection name. Pair with --embedding-model so models get separate stores.",
+    )
+    parser.add_argument(
+        "--bootstrap",
+        action="store_true",
+        help="Compute bootstrap 95% CIs on accuracy, macro-F1, and ECE",
+    )
+    parser.add_argument(
+        "--bootstrap-iterations",
+        type=int,
+        default=10000,
+        help="Bootstrap resample count (default 10000)",
+    )
     args = parser.parse_args()
-    main(k=args.k, vote_method=args.vote, mode=args.mode, alpha=args.alpha)
+    main(
+        k=args.k,
+        vote_method=args.vote,
+        mode=args.mode,
+        alpha=args.alpha,
+        embedding_model=args.embedding_model,
+        collection=args.collection,
+        bootstrap=args.bootstrap,
+        bootstrap_iterations=args.bootstrap_iterations,
+    )

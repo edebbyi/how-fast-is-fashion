@@ -336,6 +336,7 @@ The LLM in the perception stage does NOT score trends. Trend interpretation is d
 - Calibration: Expected Calibration Error (ECE)
 - Retrieval quality: neighbor purity @ k, silhouette score (cosine)
 - Artifacts: confusion matrix PNG, UMAP of the embedding space
+- v6 defensibility (74 refs, hybrid α=0.95): fashion-CLIP 0.878 (95% CI 0.797 to 0.946) vs vanilla-CLIP openai/clip-vit-base-patch32 0.824 (0.730 to 0.905). Fashion-CLIP directionally better on accuracy, macro-F1, and calibration (ECE 0.074 vs 0.111), but CIs overlap at n=74 so the gap is not statistically separable. Kept fashion-CLIP.
 - v5 baseline (59 refs, k=5, shepard, fashion-CLIP, hybrid α=0.95): accuracy 0.915, macro-F1 0.915, per-class recall {mob_wife 0.89, office_siren 0.95, quiet_luxury 0.90}
 - v4 baseline for comparison (35 refs, image-only): accuracy 0.80, macro-F1 0.80, ECE 0.137, purity@5 0.63, silhouette 0.077
 
