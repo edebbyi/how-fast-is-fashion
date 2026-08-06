@@ -81,24 +81,33 @@ def _render_md_table(headers: list[str], rows: list[list[str]]) -> str:
 def _build_markdown_summary(df: pd.DataFrame, experiment_name: str) -> str:
     """Curate the full runs frame down to a GitHub-renderable summary table."""
     headers = [
-        "run_id", "date", "model", "mode", "alpha", "n_refs",
-        "accuracy (95% CI when bootstrapped)", "macro F1", "ECE",
+        "run_id",
+        "date",
+        "model",
+        "mode",
+        "alpha",
+        "n_refs",
+        "accuracy (95% CI when bootstrapped)",
+        "macro F1",
+        "ECE",
     ]
     body: list[list[str]] = []
     for _, row in df.iterrows():
         n_refs = row.get("params.n_refs")
         n_refs_str = "" if pd.isna(n_refs) else str(int(float(n_refs)))
-        body.append([
-            str(row.get("run_id", ""))[:8],
-            str(row.get("start_time", ""))[:10],
-            _short_model(row.get("params.embedding_model")),
-            str(row.get("params.search_mode", "") or ""),
-            _fmt_alpha(row),
-            n_refs_str,
-            _fmt_metric(row, "accuracy"),
-            _fmt_metric(row, "macro_f1"),
-            _fmt_metric(row, "ece"),
-        ])
+        body.append(
+            [
+                str(row.get("run_id", ""))[:8],
+                str(row.get("start_time", ""))[:10],
+                _short_model(row.get("params.embedding_model")),
+                str(row.get("params.search_mode", "") or ""),
+                _fmt_alpha(row),
+                n_refs_str,
+                _fmt_metric(row, "accuracy"),
+                _fmt_metric(row, "macro_f1"),
+                _fmt_metric(row, "ece"),
+            ]
+        )
     body.sort(key=lambda r: r[1], reverse=True)
 
     header = (
