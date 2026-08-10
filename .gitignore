@@ -37,6 +37,7 @@ data/02_reference_corpus/qdrant/
 
 # MLflow
 mlruns/
+mlartifacts/
 mlflow.db
 
 # IDE
