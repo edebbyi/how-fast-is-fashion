@@ -1,0 +1,5 @@
+trend,first_observed,peak_month,last_active,active_month_count,active_run_length,num_active_periods,months_since_last_active,recent_slope,state,lifecycle_version
+basics,2024-02,2024-10,2025-12,13,3,2,1.0,-0.002876042565429969,rising,v1
+mob_wife,2024-05,2024-11,2025-09,6,2,3,3.0,-0.01954887218045112,seasonal_recurring,v1
+office_siren,,2024-02,,0,0,0,,0.0,inactive,v1
+quiet_luxury,2024-02,2024-09,2026-01,20,8,2,0.0,-0.0007680491551459306,persistent,v1
