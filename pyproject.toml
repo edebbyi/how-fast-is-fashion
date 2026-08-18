@@ -23,6 +23,7 @@ dependencies = [
 
     # NLP / trend detection
     "scikit-learn>=1.4",
+    "scipy>=1.11",
     "google-genai>=1.0",
     "openai>=1.0",
 

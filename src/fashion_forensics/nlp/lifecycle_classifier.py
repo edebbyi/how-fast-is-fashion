@@ -8,11 +8,19 @@ ARCHITECTURE.md's explicit caution.
 
 from __future__ import annotations
 
+import json
 from enum import Enum
+from pathlib import Path
 
 import pandas as pd
 
+from fashion_forensics.config import PROJECT_ROOT
+
 LIFECYCLE_VERSION = "v1"
+
+LIFECYCLE_STATES_PATH = (
+    PROJECT_ROOT / "data" / "03_shared" / "trend_lifecycle" / "lifecycle_states.jsonl"
+)
 
 
 class LifecycleState(str, Enum):
@@ -210,3 +218,23 @@ def classify_lifecycles(
     features["state"] = states
     features["lifecycle_version"] = lifecycle_version
     return features
+
+
+def load_lifecycle_states(path: Path | None = None) -> dict[str, dict]:
+    """Load classify_lifecycles' output (lifecycle_states.jsonl), keyed by trend.
+
+    Raises FileNotFoundError with a message pointing at
+    scripts/compute_trend_lifecycle.py if the file doesn't exist yet.
+    """
+    target = LIFECYCLE_STATES_PATH if path is None else Path(path)
+    if not target.exists():
+        raise FileNotFoundError(
+            f"{target} does not exist. Run scripts/compute_trend_lifecycle.py first "
+            "to produce it."
+        )
+    out: dict[str, dict] = {}
+    for line in target.read_text().splitlines():
+        if line.strip():
+            rec = json.loads(line)
+            out[rec["trend"]] = rec
+    return out
