@@ -178,14 +178,17 @@ def score_b(
     lifecycle_by_trend: dict[str, dict],
     weights: dict | None = None,
 ) -> dict:
-    """Model B (trend+lifecycle-aware): adds w2*trend_match + w4*trend_state_weight.
+    """Model B (trend+lifecycle-aware): adds w2*trend_match + w4*(trend_state_weight * trend_match).
 
-    trend_state_weight always uses the item's own trend, even if that trend
-    isn't one the user asked for. We do this on purpose: if we only looked
-    up the lifecycle state when trend_match was already 1, then w4 would
-    never do anything w2 wasn't already doing, and we'd lose the whole point
-    of this model - seeing whether lifecycle awareness adds something beyond
-    plain trend matching.
+    trend_state_weight is still looked up from the item's own trend even
+    when that trend isn't one the user asked for - useful to see in the
+    components breakdown - but it only counts toward the score when the
+    item's trend actually matches the profile's preferred trends. Without
+    that gate, an off-trend item in a "hot" lifecycle state (e.g. rising,
+    weight 1.0) could outscore a genuinely on-trend item sitting in a
+    calmer state (e.g. seasonal_recurring, weight 0.3) - the lifecycle
+    bonus has to be about the trend the user actually wants, not just
+    whichever trend happens to be currently hot. See ARCHITECTURE.md v10.
     """
     w = weights or DEFAULT_WEIGHTS_B
     am = attribute_match(item.get("normalized"), profile.get("preferred_attributes", []))
@@ -199,7 +202,7 @@ def score_b(
         state, profile.get("prefer_rising", False), profile.get("avoid_declining", False)
     )
 
-    score = w["w1"] * am + w["w2"] * tm + w["w3"] * cm + w["w4"] * tsw
+    score = w["w1"] * am + w["w2"] * tm + w["w3"] * cm + w["w4"] * (tsw * tm)
     return {
         "score": score,
         "components": {

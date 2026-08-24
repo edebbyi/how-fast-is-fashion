@@ -126,7 +126,7 @@ class TestScoreComposition:
     def test_score_a_vs_score_b_produce_different_rankings(self):
         # Item 1: full attribute+category match, off-trend (quiet_luxury/persistent).
         # score_a = 0.6*1.0 + 0.4*1.0 = 1.0
-        # score_b = 0.4*1.0 + 0.25*0.0 + 0.2*1.0 + 0.15*0.5(persistent) = 0.675
+        # score_b = 0.4*1.0 + 0.25*0.0 + 0.2*1.0 + 0.15*(0.5*0.0 gated off-trend) = 0.6
         item_off_trend = _item(
             "r_off_trend", trend_pred="quiet_luxury", category="shirt",
             normalized=_normalized(material=["cotton"], silhouette=["relaxed"]),
