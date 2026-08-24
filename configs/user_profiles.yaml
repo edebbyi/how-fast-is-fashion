@@ -1,0 +1,53 @@
+# Synthetic user preference profiles for the ranking engine (ARCHITECTURE.md §3.9).
+#
+# Each profile's preferred_attributes come from real attribute counts in the
+# 59 LLM-normalized catalog items (54 from earlier normalization work, plus
+# 5 office_siren items added specifically so that trend has real
+# representation too - see the office_siren profile note below). Nothing
+# here is a placeholder. preferred_trends only use the 4 real active trends
+# and their real lifecycle states (data/03_shared/trend_lifecycle/
+# lifecycle_states.jsonl), not configs/trend_rules.yaml's deferred trends
+# (e.g. boho_revival), which have no catalog items yet.
+#
+# preferred_category values are the RAW retailer category field (granular
+# garment types like "blazer"/"shirt"/"coat"/"dress" — NOT broad buckets like
+# "tops"/"outerwear", which never occur in the actual data and would silently
+# make category_match always 0). Each value below is the real, verified
+# category that actually co-occurs with the profile's target trend.
+
+user_profile_version: v1
+
+profiles:
+  synthetic_user_rising_basics:
+    preferred_attributes: [cotton, relaxed]
+    preferred_trends: [basics]              # real lifecycle state: rising
+    preferred_category: shirt                # real basics-trend category (cardigan/None/shirt)
+    prefer_rising: true
+    avoid_declining: true
+
+  synthetic_user_persistent_luxury:
+    preferred_attributes: [wool, structured]
+    preferred_trends: [quiet_luxury]         # real lifecycle state: persistent
+    preferred_category: blazer               # most common quiet_luxury-trend category (3/13)
+    prefer_rising: false
+    avoid_declining: true
+
+  synthetic_user_seasonal_mobwife:
+    preferred_attributes: [faux_fur, relaxed]
+    preferred_trends: [mob_wife]             # real lifecycle state: seasonal_recurring
+    preferred_category: coat                 # one of the only 2 mob_wife-trend items (skirt/coat)
+    prefer_rising: true
+    avoid_declining: false
+
+  synthetic_user_inactive_officesiren:
+    # office_siren originally had zero items in the fair-comparison subset
+    # (none of the first 54 normalized items happened to be office_siren).
+    # We labeled 5 more catalog items specifically to fix that, so this
+    # profile could actually be tested instead of always returning empty
+    # results. Its trend is "inactive" (not "declining"), which is a good
+    # way to check that trend_state_weight treats those two differently.
+    preferred_attributes: [satin, fitted]
+    preferred_trends: [office_siren]         # real lifecycle state: inactive
+    preferred_category: dress                # most common office_siren category catalog-wide (7/14)
+    prefer_rising: false
+    avoid_declining: true
