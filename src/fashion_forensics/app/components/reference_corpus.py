@@ -16,6 +16,8 @@ from fashion_forensics.config import PROJECT_ROOT, DATA_DIR
 
 ATTRIBUTES_PATH = DATA_DIR / "02_reference_corpus" / "attributes.jsonl"
 
+IMAGES_PER_PAGE = 25  # 5 rows x 5 cols
+
 
 def render_reference_corpus():
     st.markdown("### Reference Images")
@@ -43,15 +45,38 @@ def render_reference_corpus():
         st.caption("No reference images for this trend.")
         return
 
+    if len(filtered) <= IMAGES_PER_PAGE:
+        display_items = filtered
+    else:
+        total_pages = (len(filtered) + IMAGES_PER_PAGE - 1) // IMAGES_PER_PAGE
+        page = st.session_state.get("ref_corpus_page", 0)
+        page = max(0, min(page, total_pages - 1))
+
+        col_prev, col_indicator, col_next = st.columns([1, 4, 1])
+        with col_prev:
+            if st.button("◀", disabled=page == 0, key="ref_corpus_page_prev"):
+                page -= 1
+        with col_indicator:
+            start_n = page * IMAGES_PER_PAGE + 1
+            end_n = min((page + 1) * IMAGES_PER_PAGE, len(filtered))
+            st.caption(f"Images {start_n}-{end_n} of {len(filtered)}")
+        with col_next:
+            if st.button("▶", disabled=page >= total_pages - 1, key="ref_corpus_page_next"):
+                page += 1
+        st.session_state.ref_corpus_page = page
+
+        start = page * IMAGES_PER_PAGE
+        display_items = filtered.iloc[start : start + IMAGES_PER_PAGE]
+
     cols_per_row = 5
-    rows = (len(filtered) + cols_per_row - 1) // cols_per_row
+    rows = (len(display_items) + cols_per_row - 1) // cols_per_row
     for row_idx in range(rows):
         cols = st.columns(cols_per_row)
         for col_idx in range(cols_per_row):
             item_idx = row_idx * cols_per_row + col_idx
-            if item_idx >= len(filtered):
+            if item_idx >= len(display_items):
                 break
-            item = filtered.iloc[item_idx]
+            item = display_items.iloc[item_idx]
             with cols[col_idx]:
                 _render_reference_card(item)
 

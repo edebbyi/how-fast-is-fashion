@@ -130,6 +130,10 @@ def main():
     if mode == "Fashion":
         _render_fashion_view()
     else:
+        st.caption(
+            "Technical view: model internals, evaluation tools, and threshold "
+            "tuning - not the audience-facing Fashion view."
+        )
         _render_lab_view()
 
 
