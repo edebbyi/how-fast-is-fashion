@@ -11,7 +11,7 @@ synthetic_user_seasonal_mobwife,A,5,0.2,1.0,0.33333333333333337
 synthetic_user_seasonal_mobwife,A,10,0.1,1.0,0.18181818181818182
 synthetic_user_seasonal_mobwife,B,5,0.2,1.0,0.33333333333333337
 synthetic_user_seasonal_mobwife,B,10,0.1,1.0,0.18181818181818182
-synthetic_user_inactive_officesiren,A,5,0.4,1.0,0.5714285714285715
-synthetic_user_inactive_officesiren,A,10,0.2,1.0,0.33333333333333337
-synthetic_user_inactive_officesiren,B,5,0.4,1.0,0.5714285714285715
-synthetic_user_inactive_officesiren,B,10,0.2,1.0,0.33333333333333337
+synthetic_user_inactive_officesiren,A,5,0.2,0.3333333333333333,0.25
+synthetic_user_inactive_officesiren,A,10,0.2,0.6666666666666666,0.30769230769230765
+synthetic_user_inactive_officesiren,B,5,0.6,1.0,0.7499999999999999
+synthetic_user_inactive_officesiren,B,10,0.3,1.0,0.4615384615384615

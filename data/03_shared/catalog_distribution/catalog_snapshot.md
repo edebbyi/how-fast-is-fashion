@@ -1,13 +1,13 @@
 # Catalog trend distribution — full labeled catalog snapshot
 
-Image-only k-NN classification, open-set threshold=0.680.
+Image-only k-NN classification, open-set threshold=0.620.
 2029 classified, 0 image downloads failed and were skipped.
 
 | trend | count | share |
 |---|---|---|
-| basics | 162 | 8.0% |
-| mob_wife | 55 | 2.7% |
-| office_siren | 14 | 0.7% |
-| quiet_luxury | 284 | 14.0% |
-| unknown | 1514 | 74.6% |
+| basics | 333 | 16.4% |
+| mob_wife | 150 | 7.4% |
+| office_siren | 50 | 2.5% |
+| quiet_luxury | 656 | 32.3% |
+| unknown | 840 | 41.4% |
 | **total** | **2029** | **100.0%** |
