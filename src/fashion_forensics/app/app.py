@@ -167,22 +167,29 @@ def _render_lab_view():
         unsafe_allow_html=True,
     )
 
-    tab_perf, tab_query, tab_history = st.tabs(["Performance", "Image Query", "Run History"])
+    tab_compare, tab_refs, tab_threshold, tab_mlflow = st.tabs(
+        ["Model Comparison", "Reference Images", "Threshold Explorer", "MLflow"]
+    )
 
-    with tab_perf:
-        from fashion_forensics.app.components.performance import render_performance
+    with tab_compare:
+        from fashion_forensics.app.components.recommendations import render_recommendations
 
-        render_performance()
+        render_recommendations()
 
-    with tab_query:
-        from fashion_forensics.app.components.query import render_image_query
+    with tab_refs:
+        from fashion_forensics.app.components.reference_corpus import render_reference_corpus
 
-        render_image_query()
+        render_reference_corpus()
 
-    with tab_history:
-        from fashion_forensics.app.components.history import render_run_history
+    with tab_threshold:
+        from fashion_forensics.app.components.threshold_explorer import render_threshold_explorer
 
-        render_run_history()
+        render_threshold_explorer()
+
+    with tab_mlflow:
+        from fashion_forensics.app.components.mlflow_panel import render_mlflow_panel
+
+        render_mlflow_panel()
 
 
 if __name__ == "__main__":
