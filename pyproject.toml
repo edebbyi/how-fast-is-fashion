@@ -36,6 +36,8 @@ dependencies = [
 
     # App
     "streamlit>=1.30",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
 
     # Logging
     "loguru>=0.7",

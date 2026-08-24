@@ -1,0 +1,51 @@
+# Trend-site curation config.
+#
+# Each entry under `sources` is a page believed to feature a specific trend
+# aesthetic (an editorial roundup, a trend report, a lookbook page — not a
+# retailer product listing; those go through configs/mining.yaml instead).
+# The scraper pulls candidate images + attribution metadata (source name,
+# page URL, image URL, alt text) into a review queue. Nothing is added to
+# data/02_reference_corpus/labeled/ until a human approves it via the
+# Streamlit review app.
+#
+# `trend_hint` pre-selects a trend in the review UI — it's a suggestion,
+# not a label. The reviewer can override it or leave a candidate unsorted.
+#
+# Replace the example sources below with real trend-site URLs before running
+# the scraper.
+
+sources:
+  - name: "Example — Quiet Luxury roundup"
+    url: "https://example.com/trends/quiet-luxury"
+    trend_hint: quiet_luxury
+
+  - name: "Example — Mob Wife aesthetic"
+    url: "https://example.com/trends/mob-wife"
+    trend_hint: mob_wife
+
+  - name: "Example — Office Siren"
+    url: "https://example.com/trends/office-siren"
+    trend_hint: office_siren
+
+# Minimum bytes to keep a candidate image (filters out icons/tracking pixels)
+min_image_bytes: 8000
+
+# Maximum candidate images to pull per source per run
+max_images_per_source: 40
+
+request_timeout_seconds: 10
+retry_count: 2
+delay_between_sources_seconds: 2
+
+# Heuristic filters (same idea as configs/mining.yaml good/bad signals)
+bad_url_signals:
+  - "logo"
+  - "icon"
+  - "sprite"
+  - "avatar"
+  - "favicon"
+  - ".svg"
+  - "pixel"
+  - "tracking"
+  - "1x1"
+  - "placeholder"

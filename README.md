@@ -44,6 +44,7 @@ Raw retail snapshots
 | Lifecycle classifier | | planned |
 | Ranking engine (A/B) | | planned |
 | Streamlit app | `src/fashion_forensics/app/` | scaffold only |
+| Trend curation (scrape + human review) | `src/fashion_forensics/curation/` | shipped |
 
 See the [ARCHITECTURE.md revision log](ARCHITECTURE.md#12-architecture-revision-log) for details on v1–v4.
 
@@ -78,6 +79,47 @@ cp .env.example .env
 MLflow UI: `.venv/bin/mlflow ui --backend-store-uri sqlite:///mlflow.db`
 
 ---
+
+## Trend curation — scrape, review, promote to the reference corpus
+
+Grows `data/02_reference_corpus/labeled/{trend}/` (the fashion-CLIP retrieval
+references, §3.5) from live trend-site imagery instead of hand-collecting
+files. A human always approves before anything joins the corpus:
+
+```
+configs/curation.yaml (trend-site URLs)
+  → scraper stages candidate images + source attribution → review queue
+  → Streamlit review app: approve (pick a trend) or reject
+  → approved images land in data/02_reference_corpus/labeled/{trend}/
+    + data/02_reference_corpus/attributions.jsonl (source URL, page, alt text)
+```
+
+```bash
+# 1. Point configs/curation.yaml at real trend-site pages (editorial
+#    roundups / lookbooks — not retailer product listings, those go
+#    through configs/mining.yaml). The shipped file has placeholder URLs.
+
+# 2. Scrape into the review queue (data/04_curation/)
+.venv/bin/python scripts/scrape_trend_sites.py
+
+# 3. Start the review backend
+.venv/bin/uvicorn fashion_forensics.curation.api:app --port 8010
+
+# 4. Start the review app and approve/reject
+.venv/bin/streamlit run src/fashion_forensics/curation/review_app.py
+```
+
+Every candidate keeps its source name, page URL, and image URL through
+approval, so `attributions.jsonl` is a full provenance trail for the
+reference corpus. Rejected/duplicate images never touch the labeled corpus.
+Content-hash dedup means re-running the scraper is safe — it only queues
+images it hasn't seen before.
+
+**Pinterest** isn't wired up yet — Pinterest doesn't offer straightforward
+scraping (ToS-gated), so pulling boards would go through their official API
+instead. The queue schema already carries a generic `source_name`/`source_url`
+per candidate, so adding a Pinterest source later is a new fetcher, not a
+redesign.
 
 ## Notebooks
 

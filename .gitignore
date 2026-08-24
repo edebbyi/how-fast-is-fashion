@@ -23,6 +23,11 @@ data/04_training/*.jsonl
 # Vector DB binary files — rebuildable from scripts/embed_reference_corpus.py
 data/02_reference_corpus/qdrant/
 
+# Trend curation — unreviewed scraped candidates (large binaries, not yet vetted).
+# queue.json (review state) and attributions.jsonl (approved provenance) ARE committed.
+data/04_curation/staging/*
+!data/04_curation/staging/.gitkeep
+
 # Data — these ARE committed for reproducibility:
 # data/01_data_audit/records/*.jsonl       (raw metadata audit trail)
 # data/01_data_audit/cleaned/*.jsonl       (filtered dataset)
