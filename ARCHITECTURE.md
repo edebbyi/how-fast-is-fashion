@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the technical architecture for the `how-fast-is-fashion` system. It is intended for implementation support in Claude Code and should be treated as the source-of-truth for module boundaries, data flow, and execution responsibilities.
+This document defines the technical architecture for the `how-fast-is-fashion` system. It's the source of truth for how the system is broken into modules, how data flows between them, and what each module is responsible for — meant to support implementation work in Claude Code.
 
 ---
 
@@ -64,7 +64,7 @@ Trend Rule Engine          FashionCLIP + Qdrant k-NN     Student LoRA (PaliGemma
 Trend assignment is NOT a single brittle pipeline — three independent signals run in parallel and feed the aggregator:
 
 1. **Rule engine** (§3.6) — symbolic, deterministic, transparent. Reads normalized attributes (especially `details` from a closed trend-discriminating vocabulary) and applies rules from `configs/trend_rules.yaml`.
-2. **FashionCLIP + Qdrant k-NN** (§3.5) — each labeled reference image is embedded with fashion-CLIP and stored individually in a Qdrant vector DB. Inference: embed the query, retrieve the top-k nearest labeled neighbors, run a similarity-weighted vote. Catches gestalt that attribute extraction misses, and returns the specific matched reference filenames for explainability.
+2. **FashionCLIP + Qdrant k-NN** (§3.5) — each labeled reference image is embedded with fashion-CLIP and stored individually in a Qdrant vector DB. Inference: embed the query, retrieve the top-k nearest labeled neighbors, run a similarity-weighted vote. Catches overall visual patterns that itemized attribute extraction misses (the "look" of a trend, not just its listed attributes), and returns the specific matched reference filenames for explainability.
 3. **Student LoRA** (§3.4) — fine-tuned on Pinterest trend buckets, cross-domain test on Zara. Higher quality with proper data; FashionCLIP is the baseline it must beat.
 
 The LLM in the perception stage does NOT score trends. Trend interpretation is delegated to these three downstream signals so each can be evaluated, swapped, or improved independently.
@@ -243,8 +243,8 @@ The LLM in the perception stage does NOT score trends. Trend interpretation is d
 - Mitigations to evaluate, in order of preference:
   1. Add a small Zara-labeled fine-tune set (e.g., 100–200 images) so the student sees the target distribution.
   2. Preprocess Pinterest to isolate garments (background removal / crop).
-  3. Apply domain-adversarial regularization during training.
-- Track the train/test domain gap explicitly as a metric (e.g., feature-distribution distance between Pinterest and Zara embeddings).
+  3. Apply domain-adversarial training — a technique that penalizes the model for being able to tell Pinterest and Zara images apart, pushing it toward features that hold up on both.
+- Track the train/test domain gap as an explicit metric, not just eyeballed — e.g., how far apart the average Pinterest and Zara embeddings sit in feature space.
 - Watch for data leakage: any image present in BOTH the Pinterest training set and the Zara evaluation set must be removed.
 
 ---
@@ -320,7 +320,7 @@ The LLM in the perception stage does NOT score trends. Trend interpretation is d
 
 **Voting methods**
 - `majority`: count labels among top-k neighbors; ties broken by insertion order (nearest-first). Confidence = mean cosine similarity of winning-class neighbors.
-- `shepard` (default): each neighbor contributes its cosine similarity to its class's score; winner = class with max weighted mass. Confidence = winner's share of total similarity mass (posterior-like). Better-calibrated than majority and eliminates arbitrary tie-breaks.
+- `shepard` (default): each neighbor contributes its cosine similarity to its class's score; winner = class with max weighted mass. Confidence = winner's share of total similarity mass. Better-calibrated than majority and eliminates arbitrary tie-breaks.
 
 **Open-set detection**
 - When `open_set_threshold` is set: if `max(neighbor.score) < threshold`, flag `open_set_unknown=True`. This protects against force-labeling products that aren't in any known trend.
@@ -370,7 +370,7 @@ The LLM in the perception stage does NOT score trends. Trend interpretation is d
 
 **Interaction with schema versions (see "Deferred to v2" below)**
 - v1 flat schema: the `trend_retrieval` block sits at the **record level** (one per SKU image). Matches today's flat multi-value attribute schema naturally — one image, one trend prediction.
-- v2 nested schema (`product` + `outfit_components`): `trend_retrieval` belongs on the **`product` field** — retrieval operates on the whole product image and predicts the *overall* trend aesthetic, not the constituent components. A styled outfit photo with e.g. a quiet-luxury blazer and mob-wife accessories will receive one aggregate trend prediction, not per-component predictions. If per-component trend assignment becomes load-bearing later, it requires a segmentation step (YOLO/SAM crop → retrieval per crop) — explicitly out of scope for v4.
+- v2 nested schema (`product` + `outfit_components`): `trend_retrieval` belongs on the **`product` field**, not on individual outfit components. Retrieval looks at the whole product photo and predicts one overall trend for it. So a styled outfit photo showing, say, a quiet-luxury blazer paired with mob-wife accessories gets a single aggregate trend prediction — not one prediction per garment in the shot. Giving each component its own trend prediction would need an extra step first (crop out each garment with YOLO/SAM, then retrieve per crop) — explicitly out of scope for v4.
 
 ---
 
@@ -545,8 +545,9 @@ score_B =
     w1 * attribute_match
   + w2 * trend_match
   + w3 * category_match
-  + w4 * trend_state_weight
+  + w4 * (trend_state_weight * trend_match)
 ```
+`trend_state_weight` is gated by `trend_match` (v10): it's still computed and shown for whatever trend the item actually belongs to, but only counts toward the score when that trend is one the user asked for — otherwise a trend in a "hot" lifecycle state could outrank a genuinely-preferred trend just for being currently trendier, regardless of what the user wants.
 
 **Why this contrast (revised from `+trend_state_weight only`)**
 - The previous A/B differed only by a single weight, producing a tiny effect that was unlikely to register in evaluation.
@@ -909,6 +910,25 @@ Prefer a complete v1 with constrained coverage over a wider but partial build.
 ---
 
 ## 12. Architecture Revision Log
+
+### v11 (2026-08-21) — Threshold Explorer: precision/coverage on the reference corpus, not just catalog-share
+
+- The Threshold Explorer tab could already show how the *catalog* distribution shifts as the open-set threshold moves, but catalog items have no ground truth - it could only show what changes, never whether the change is right. Added a second panel using the 135-image labeled reference corpus (the only place "correct" is knowable): a precision/coverage curve swept across the full 0-1 threshold range, synced to the same slider used for the catalog-share panel.
+- Required extracting the LOOCV logic already buried inside `classify_catalog.py`'s `calibrate_open_set_threshold()` (previously computed a percentile and discarded the per-image data) into a reusable `run_reference_loocv()`, plus a new small standalone script `scripts/reference_loocv.py` that runs it and writes `data/03_shared/catalog_distribution/reference_loocv.jsonl`. Kept separate from `classify_catalog.py`'s full run on purpose: this data only depends on the reference corpus + embedding model, not the ~2,029-item catalog, so it doesn't need a ~30-minute full catalog rerun to stay fresh.
+- Sanity check: the auto-calibrated threshold recomputed from this run (0.680) exactly matches the currently-shipped catalog's threshold, confirming the extraction didn't change the calibration behavior. At the shipped threshold: precision ≈72.7%, coverage ≈94.8% (94.8% of the reference corpus clears the threshold; of those, ~73% are actually correctly classified) - the real accuracy/coverage tradeoff behind the single calibrated number.
+
+### v10 (2026-08-21) — §3.9 Model B: unconditional trend_state_weight can let an off-trend item outrank an on-trend one
+
+- **Found via the Model Comparison tab, not a synthetic test case.** `synthetic_user_seasonal_mobwife` (prefers `mob_wife`, category `coat`) got a `basics` item ranked #2, ahead of the catalog's own *other* real `mob_wife` item. Real scores: the `basics` item (`trend_match: 0`, state `rising`) scored `0.4×0.5(attr) + 0.15×1.0(rising bonus) = 0.35`; the actual `mob_wife` item (`trend_match: 1`, state `seasonal_recurring`) only scored `0.25×1(trend) + 0.15×0.3(seasonal bonus) = 0.295`. The off-trend item's lifecycle bonus alone was enough to win.
+- **Root cause:** `score_b()`'s `trend_state_weight` term is looked up from the item's own trend and added regardless of `trend_match` (see §3.9 code comment: *"if we only looked up the lifecycle state when trend_match was already 1, then w4 would never do anything w2 wasn't already doing"*) — a deliberate choice to let the lifecycle signal register even off-trend, for evaluation purposes. The practical side effect: a trend in a "hot" state (`rising`, weight 1.0) can out-bid a genuinely-preferred trend sitting in a "quieter" state (`seasonal_recurring`, weight 0.3), even though the user asked for the other trend by name. Compounding factor: only 2 `mob_wife`-trend items in the whole catalog have normalized attributes, so there's very little real signal to compete against.
+- **Proposed fix, not yet implemented:** gate the state-weight term by trend match — `score = w1·attribute_match + w2·trend_match + w3·category_match + w4·(trend_state_weight × trend_match)`. Keep computing and displaying `trend_state_weight` in the components breakdown either way (still useful for seeing what other trends' lifecycle states look like), but stop letting it *contribute to the score* unless the item is actually the trend the user asked for. Re-verified the `synthetic_user_seasonal_mobwife` case against this formula: the `basics` item drops to `0.4×0.5 + 0.15×(1.0×0) = 0.20`, the real `mob_wife` item stays at `0.295` and correctly outranks it.
+- **Implemented.** `score_b()` now multiplies `trend_state_weight` by `trend_match`. `tests/test_ranking_engine.py` updated, `scripts/rank_catalog.py` re-run to regenerate `data/03_shared/ranking/`.
+- **Future idea, not started: a dedicated `notebooks/04_ranking_evaluation.ipynb`.** Unlike the classifier (`03_trend_classification.ipynb`'s LOOCV sweeps, bootstrap CIs, plots), the ranking engine has never had real exploratory analysis done on it — just the single `tau`/`top5_overlap` numbers per profile in `ab_comparison_summary.md`. Two concrete things worth doing there when there's bandwidth: (1) a weight-sensitivity sweep — `DEFAULT_WEIGHTS_B` (`w1=0.4, w2=0.25, w3=0.2, w4=0.15`) are first-guess defaults, never tuned or checked for sensitivity; (2) a systematic plotted comparison of `tau`/overlap across all 4 synthetic profiles instead of reading them one at a time. Should be its own notebook, not bolted onto `03_trend_classification.ipynb` — that one's scoped to the classifier, and mixing in ranking analysis would blur it the same way the cut Attribute Coverage tab blurred the Lab view's job (see above).
+
+### v9 (2026-08-20) — Streamlit Lab view built out; Attribute Coverage tab cut, kept as a future idea
+
+- Lab view rebuilt around what's actually usable: the old `Performance`/`Image Query`/`Run History` tabs were dead scaffolding (they read from `data/01_data_audit/evaluation/runs/`, which nothing has ever written to — `run_benchmark()` in `src/fashion_forensics/evaluation/benchmark.py` exists but is never called from any script). Replaced with `Model Comparison` (moved from the Fashion view — it's a synthetic-profile A/B validation tool, not a real recommendations feature, and was confusing non-technical viewers), `Reference Corpus` (browse the 135 labeled images the classifier votes against), `Threshold Explorer` (drag the open-set threshold, see the catalog-wide distribution shift live — needed adding `winning_trend`/`max_sim` to `catalog_classifications.jsonl` since the shipped file only kept the post-threshold "unknown" collapse), and `MLflow` (a thin pointer into the real run history, not a rebuilt parallel one).
+- **Attribute Coverage tab: built, then cut.** Showed hybrid-eligible vs image-only-forced item counts (only 59/2029 items have the normalized attributes hybrid mode needs), framed around the measured 0.865→0.878 LOOCV accuracy gap. Cut because it was read-only context with no action attached — it restates a number you could already remember rather than driving a decision. **Better version, not built:** a prioritized "next items to normalize" list, using `max_sim` (already available from the Threshold Explorer work above) to surface image-only items sitting near the open-set threshold boundary — those are the ones most likely to actually flip to a different/better classification if hybrid mode became available for them, unlike confidently-classified items where normalizing would just confirm the existing answer. Worth building if/when attribute-coverage expansion actually gets scheduled.
 
 ### v8 (2026-08-12) — Notebook 03 §14 investigated; taxonomy validated, curation deferred; scope check against roadmap
 
