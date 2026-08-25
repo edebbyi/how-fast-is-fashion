@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     mlflow_tracking_uri: str = Field(default="http://localhost:5000")
     mlflow_experiment_name: str = Field(default="fashion-forensics")
 
+    # Trend curation — image search (Google Custom Search JSON API, image mode)
+    google_cse_api_key: str = Field(default="")
+    google_cse_id: str = Field(default="")
+
     # Retrieval / vector DB
     fashion_clip_model: str = Field(default="patrickjohncyh/fashion-clip")
     qdrant_path: str = Field(default="data/02_reference_corpus/qdrant")

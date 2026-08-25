@@ -1,43 +1,44 @@
-# Trend-site curation config.
+# Trend curation config.
 #
-# Each entry under `sources` is a page believed to feature a specific trend
-# aesthetic (an editorial roundup, a trend report, a lookbook page — not a
-# retailer product listing; those go through configs/mining.yaml instead).
-# The scraper pulls candidate images + attribution metadata (source name,
-# page URL, image URL, alt text) into a review queue. Nothing is added to
-# data/02_reference_corpus/labeled/ until a human approves it via the
-# Streamlit review app.
+# Two ways to find candidate images (both go through the same review queue
+# and never touch the labeled corpus without a human approving):
 #
-# `trend_hint` pre-selects a trend in the review UI — it's a suggestion,
-# not a label. The reviewer can override it or leave a candidate unsorted.
+#   1. Query search — type a free-text query ("clean luxury fashion outfit")
+#      into the review app; hits Google Custom Search (image mode). See
+#      GOOGLE_CSE_API_KEY / GOOGLE_CSE_ID in .env.example for setup, and the
+#      `search_*` settings below for defaults.
+#   2. Page scraping — either paste a single page URL into the review app
+#      on demand (works for a Pinterest board/pin link, an editorial page,
+#      anything), or pre-configure recurring pages under `sources:` below
+#      and run scripts/scrape_trend_sites.py / the "Scrape configured
+#      sources" button.
 #
-# Replace the example sources below with real trend-site URLs before running
-# the scraper.
+# `trend_hint` (search results and configured sources alike) pre-selects a
+# trend in the review UI — it's a suggestion, not a label. The reviewer can
+# override it or leave a candidate unsorted.
 
-sources:
-  - name: "Example — Quiet Luxury roundup"
-    url: "https://example.com/trends/quiet-luxury"
-    trend_hint: quiet_luxury
+# --- Query search defaults ---
+search_max_results_default: 20
+search_safe_mode: "active"  # Google CSE safe-search: "active" or "off"
 
-  - name: "Example — Mob Wife aesthetic"
-    url: "https://example.com/trends/mob-wife"
-    trend_hint: mob_wife
-
-  - name: "Example — Office Siren"
-    url: "https://example.com/trends/office-siren"
-    trend_hint: office_siren
+# --- Page scraping: pre-configured recurring sources (optional) ---
+# Replace with real trend-site URLs, or leave empty and rely on the review
+# app's "Search the web" / "Scrape a page" boxes instead.
+sources: []
 
 # Minimum bytes to keep a candidate image (filters out icons/tracking pixels)
 min_image_bytes: 8000
 
-# Maximum candidate images to pull per source per run
+# Maximum candidate images to pull per source per run (configured sources
+# and ad-hoc pasted-URL scrapes alike)
 max_images_per_source: 40
 
 request_timeout_seconds: 10
 retry_count: 2
 delay_between_sources_seconds: 2
 
-# Heuristic filters (same idea as configs/mining.yaml good/bad signals)
+# Heuristic filters for page scraping (same idea as configs/mining.yaml
+# good/bad signals). Not applied to query search results.
 bad_url_signals:
   - "logo"
   - "icon"

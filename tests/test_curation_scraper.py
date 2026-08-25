@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from bs4 import BeautifulSoup
 
-from fashion_forensics.curation.scraper import extract_candidate_images
+from fashion_forensics.curation.scraper import (
+    extract_candidate_images,
+    extract_pinterest_images,
+)
 
 BAD_SIGNALS = ["logo", "icon", "sprite", "favicon", ".svg", "pixel", "tracking"]
 
@@ -71,3 +74,43 @@ class TestExtractCandidateImages:
         candidates = extract_candidate_images(_soup(html), "https://example.com", [])
         assert len(candidates) == 1
         assert candidates[0]["alt_text"] == "first mention"
+
+
+class TestExtractPinterestImages:
+    def test_finds_pinimg_urls_embedded_in_script_json(self):
+        # Pinterest hydrates board pages from JSON in <script> tags, not <img src>
+        html = (
+            '<script id="__PWS_DATA__" type="application/json">'
+            '{"resource_response":{"data":{"images":{"orig":{'
+            '"url":"https://i.pinimg.com/736x/ab/cd/ef/abcdef1234567890.jpg"}}}}}'
+            "</script>"
+        )
+        results = extract_pinterest_images(html)
+        assert results == [
+            {
+                "image_url": "https://i.pinimg.com/736x/ab/cd/ef/abcdef1234567890.jpg",
+                "alt_text": None,
+            }
+        ]
+
+    def test_upsizes_small_variants_to_736x(self):
+        html = '"url":"https://i.pinimg.com/236x/12/34/56/deadbeefcafef00d.jpg"'
+        results = extract_pinterest_images(html)
+        assert results[0]["image_url"] == "https://i.pinimg.com/736x/12/34/56/deadbeefcafef00d.jpg"
+
+    def test_leaves_originals_untouched(self):
+        html = '"url":"https://i.pinimg.com/originals/12/34/56/deadbeefcafef00d.jpg"'
+        results = extract_pinterest_images(html)
+        assert results[0]["image_url"] == "https://i.pinimg.com/originals/12/34/56/deadbeefcafef00d.jpg"
+
+    def test_dedupes_after_upsizing_collapses_to_same_url(self):
+        html = (
+            '"url":"https://i.pinimg.com/236x/aa/bb/cc/abc123.jpg" '
+            '"url":"https://i.pinimg.com/474x/aa/bb/cc/abc123.jpg"'
+        )
+        results = extract_pinterest_images(html)
+        assert len(results) == 1
+        assert results[0]["image_url"] == "https://i.pinimg.com/736x/aa/bb/cc/abc123.jpg"
+
+    def test_no_pinimg_urls_returns_empty_list(self):
+        assert extract_pinterest_images("<html><body>nothing here</body></html>") == []

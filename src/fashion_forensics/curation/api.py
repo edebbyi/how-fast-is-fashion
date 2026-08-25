@@ -30,6 +30,18 @@ class RejectRequest(BaseModel):
     reason: str | None = None
 
 
+class SearchRequest(BaseModel):
+    query: str
+    max_results: int = 20
+    trend_hint: str | None = None
+
+
+class ScrapeUrlRequest(BaseModel):
+    url: str
+    name: str | None = None
+    trend_hint: str | None = None
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -83,3 +95,22 @@ def trigger_scrape() -> dict:
     """Run the configured trend-site scrape synchronously and return per-source counts."""
     scraper = TrendSiteScraper()
     return scraper.run()
+
+
+@app.post("/scrape-url")
+def scrape_single_url(body: ScrapeUrlRequest) -> dict:
+    """Scrape one page on demand (e.g. a pasted Pinterest board/pin link)."""
+    scraper = TrendSiteScraper()
+    return scraper.scrape_url(body.url, name=body.name, trend_hint=body.trend_hint)
+
+
+@app.post("/search")
+def search_images(body: SearchRequest) -> dict:
+    """Run a free-text image search (Google CSE) and queue results for review."""
+    from fashion_forensics.curation.image_search import GoogleImageSearchProvider
+
+    try:
+        provider = GoogleImageSearchProvider()
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return provider.run(body.query, max_results=body.max_results, trend_hint=body.trend_hint)

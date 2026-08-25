@@ -60,8 +60,59 @@ with st.sidebar:
         st.table(queue_stats["approved_by_trend"])
 
     st.divider()
-    if st.button("Scrape new images", use_container_width=True):
-        with st.spinner("Scraping configured trend sites..."):
+    st.subheader("Search the web")
+    search_query = st.text_input(
+        "Query", placeholder='e.g. "clean luxury fashion outfit"', key="search_query"
+    )
+    search_trend = st.selectbox("Tag results as", ["Unsorted"] + known_trends, key="search_trend")
+    search_max = st.number_input(
+        "Max results", min_value=5, max_value=100, value=20, step=5, key="search_max"
+    )
+    if st.button(
+        "Search & queue", use_container_width=True, disabled=not search_query.strip()
+    ):
+        with st.spinner(f"Searching {search_query!r}..."):
+            try:
+                summary = _api_post(
+                    "/search",
+                    {
+                        "query": search_query.strip(),
+                        "max_results": int(search_max),
+                        "trend_hint": None if search_trend == "Unsorted" else search_trend,
+                    },
+                    timeout=120,
+                )
+                st.success(f"Queued {summary['added']} new (of {summary['found']} found)")
+            except requests.RequestException as e:
+                st.error(f"Search failed: {e}")
+        st.rerun()
+
+    st.divider()
+    st.subheader("Scrape a page")
+    st.caption("Paste any page URL — a Pinterest board/pin, an editorial roundup, etc.")
+    page_url = st.text_input(
+        "Page URL", placeholder="https://www.pinterest.com/username/board-name/", key="page_url"
+    )
+    page_trend = st.selectbox("Tag results as", ["Unsorted"] + known_trends, key="page_trend")
+    if st.button("Scrape page", use_container_width=True, disabled=not page_url.strip()):
+        with st.spinner(f"Scraping {page_url!r}..."):
+            try:
+                summary = _api_post(
+                    "/scrape-url",
+                    {
+                        "url": page_url.strip(),
+                        "trend_hint": None if page_trend == "Unsorted" else page_trend,
+                    },
+                    timeout=120,
+                )
+                st.success(f"Queued {summary['added']} new (of {summary['found']} found)")
+            except requests.RequestException as e:
+                st.error(f"Scrape failed: {e}")
+        st.rerun()
+
+    st.divider()
+    if st.button("Scrape configured sources", use_container_width=True):
+        with st.spinner("Scraping sources from configs/curation.yaml..."):
             try:
                 summary = _api_post("/scrape", timeout=300)
                 st.success("Scrape complete")
@@ -71,7 +122,9 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    filter_choice = st.selectbox("Filter by suggested trend", ["All", "Unsorted"] + known_trends)
+    filter_choice = st.selectbox(
+        "Filter by suggested trend", ["All", "Unsorted"] + known_trends, key="filter_trend"
+    )
 
 filter_trend_hint: str | None
 if filter_choice == "All":
@@ -89,7 +142,9 @@ if filter_choice == "Unsorted":
     candidates = [c for c in candidates if not c.get("trend_hint")]
 
 if not candidates:
-    st.info("No pending candidates. Run a scrape from the sidebar, or adjust the filter.")
+    st.info(
+        "No pending candidates. Search or scrape a page from the sidebar, or adjust the filter."
+    )
 else:
     st.caption(f"{len(candidates)} pending review")
     columns = st.columns(3)
