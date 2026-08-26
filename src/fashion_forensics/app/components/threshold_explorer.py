@@ -66,12 +66,8 @@ def render_threshold_explorer():
     st.divider()
     st.markdown("##### Precision & coverage vs. threshold, on the 135 reference images")
     st.caption(
-        "Catalog items above have no ground truth, so the panels above only show what "
-        "changes, not whether it's right. These 135 reference images do have "
-        "human-verified labels - the only place \"correct\" is actually knowable. "
-        "Precision: of the reference images that clear the threshold, what % are "
-        "classified correctly. Coverage: what % of the reference corpus clears the "
-        "threshold at all, vs. gets thrown away as \"unknown\"."
+        "Precision: % of images clearing the threshold that are correctly classified. "
+        "Coverage: % of the reference images that clear the threshold at all."
     )
     if not REFERENCE_LOOCV_PATH.exists():
         st.info("No reference LOOCV data yet. Run scripts/reference_loocv.py first.")
@@ -91,9 +87,16 @@ def render_threshold_explorer():
             f"{current_coverage:.1%} ({len(kept)} of {len(loocv_df)} reference images)."
         )
 
+        st.caption(f"Same numbers, per trend, at threshold {threshold:.2f}:")
+        st.dataframe(
+            _per_trend_precision_coverage(loocv_df, threshold).style.format(
+                {"precision": "{:.1%}", "coverage": "{:.1%}"}
+            ),
+            width="stretch",
+        )
+
     st.divider()
     st.markdown("##### Catalog items by best-match similarity score")
-    st.caption("Where items actually sit relative to the threshold - helps judge if it's cutting in a sensible place.")
     bins = pd.cut(df["max_sim"], bins=20)
     hist = bins.value_counts().sort_index()
     hist.index = [f"{i.left:.2f}" for i in hist.index]
@@ -107,6 +110,19 @@ def _distribution_table(trend_series: pd.Series) -> pd.DataFrame:
     table.columns = ["trend", "count"]
     table["share"] = (table["count"] / total).map(lambda x: f"{x:.1%}")
     return table
+
+
+def _per_trend_precision_coverage(loocv_df: pd.DataFrame, threshold: float) -> pd.DataFrame:
+    """Precision/coverage at one fixed threshold, broken down by true_trend -
+    the aggregate curve above can hide a threshold that's fine on average but
+    quietly bad for one specific trend."""
+    rows = []
+    for trend, group in loocv_df.groupby("true_trend"):
+        kept = group[group["max_sim"] >= threshold]
+        coverage = len(kept) / len(group) if len(group) else 0.0
+        precision = kept["correct"].mean() if len(kept) else float("nan")
+        rows.append({"trend": trend, "precision": precision, "coverage": coverage, "n_refs": len(group)})
+    return pd.DataFrame(rows).set_index("trend")
 
 
 def _precision_coverage_curve(loocv_df: pd.DataFrame) -> pd.DataFrame:

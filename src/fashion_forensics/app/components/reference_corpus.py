@@ -22,8 +22,18 @@ IMAGES_PER_PAGE = 25  # 5 rows x 5 cols
 def render_reference_corpus():
     st.markdown("### Reference Images")
 
+    from fashion_forensics import curation
+
+    n_pending_sync = curation.pending_sync_count()
+    if n_pending_sync:
+        st.caption(
+            f"{n_pending_sync} image{'s' if n_pending_sync != 1 else ''} approved in Curate "
+            f"but not shown here yet - this view only shows captioned images, and captions "
+            f"are only generated when you click \"Sync to classifier\" in Curate."
+        )
+
     if not ATTRIBUTES_PATH.exists():
-        st.info("No reference corpus captions found. Run scripts/caption_reference_corpus.py first.")
+        st.info("No reference image captions found. Run scripts/normalize_reference_corpus.py first.")
         return
 
     df = pd.read_json(ATTRIBUTES_PATH, lines=True)

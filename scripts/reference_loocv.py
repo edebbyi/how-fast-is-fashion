@@ -18,8 +18,11 @@ Output: data/03_shared/catalog_distribution/reference_loocv.jsonl
   one row per reference image: filename, true_trend, predicted_trend,
   max_sim, correct
 
-Also logs to MLflow (experiment "reference-loocv"): accuracy and the
-auto-calibrated threshold this run would pick.
+Also logs to MLflow (experiment "reference-loocv"): accuracy, macro F1,
+per-trend precision/recall/F1, the auto-calibrated threshold this run would
+pick, and the full reference_loocv.jsonl as an artifact - one run per call,
+so evaluation history over time is browsable in the MLflow tab even though
+the local reference_loocv.jsonl file only ever holds the latest run.
 
 Usage:
     .venv/bin/python scripts/reference_loocv.py
@@ -31,6 +34,7 @@ import argparse
 import json
 
 from loguru import logger
+from sklearn.metrics import precision_recall_fscore_support
 
 from classify_catalog import (
     OUTPUT_DIR,
@@ -61,6 +65,22 @@ def main(k: int, vote_method: str, embedding_model: str, collection: str) -> Non
     logger.info(f"LOOCV accuracy: {accuracy:.3f} over {len(results)} reference images")
     logger.info(f"Auto-calibrated open-set threshold: {threshold:.3f}")
 
+    # Per-trend precision/recall/F1 - logged to MLflow (not just shown in the
+    # Curate "Evaluate reference corpus" button) so evaluation history is
+    # durable across sessions, not lost when the browser tab closes.
+    labels = sorted({r["true_trend"] for r in results})
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        [r["true_trend"] for r in results],
+        [r["predicted_trend"] for r in results],
+        labels=labels,
+        zero_division=0,
+    )
+    macro_f1 = f1.mean() if len(f1) else 0.0
+    per_trend_metrics = {
+        label: {"precision": p, "recall": r, "f1": f}
+        for label, p, r, f in zip(labels, precision, recall, f1)
+    }
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     out_path = OUTPUT_DIR / "reference_loocv.jsonl"
     with open(out_path, "w") as f:
@@ -83,7 +103,12 @@ def main(k: int, vote_method: str, embedding_model: str, collection: str) -> Non
         tags={"protocol": "reference-corpus-loocv"},
     ) as mlflow_tracker:
         mlflow_tracker.log_metric("accuracy", accuracy)
+        mlflow_tracker.log_metric("macro_f1", macro_f1)
         mlflow_tracker.log_metric("calibrated_threshold", threshold)
+        for label, m in per_trend_metrics.items():
+            mlflow_tracker.log_metric(f"precision_{label}", m["precision"])
+            mlflow_tracker.log_metric(f"recall_{label}", m["recall"])
+            mlflow_tracker.log_metric(f"f1_{label}", m["f1"])
         mlflow_tracker.log_artifact(str(out_path))
 
 

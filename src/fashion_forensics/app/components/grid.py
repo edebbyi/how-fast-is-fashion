@@ -18,6 +18,9 @@ CLASSIFICATIONS_PATH = (
 )
 RAW_IMAGES_DIR = DATA_DIR / "01_data_audit" / "raw_images"
 
+COLS_PER_ROW = 4
+ITEMS_PER_PAGE = 100  # 25 rows x 4 cols
+
 
 def render_drilldown():
     """Show a grid of catalog items, filterable by trend and month.
@@ -90,26 +93,45 @@ def render_drilldown():
 
     filtered = filtered.sort_values("confidence", ascending=False)
 
-    cols_per_row = 4
-    max_rows = 25
+    if len(filtered) <= ITEMS_PER_PAGE:
+        display_items = filtered
+    else:
+        total_pages = (len(filtered) + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
+        page = st.session_state.get("discover_page", 0)
+        page = max(0, min(page, total_pages - 1))
 
-    # Only resolve image paths for the items we're actually about to show,
-    # not the whole filtered set - keeps the lookup query small. We already
-    # have "month" from the classification data, so only pull
-    # image_filename from the lookup (both sides having a "month" column
-    # would make pandas rename them to month_x/month_y on merge).
-    shown = filtered.head(cols_per_row * max_rows)
-    image_info = resolve_image_paths(shown["record_id"].tolist())[["record_id", "image_filename"]]
-    filtered = shown.merge(image_info, on="record_id", how="left")
+        col_prev, col_indicator, col_next = st.columns([1, 4, 1])
+        with col_prev:
+            if st.button("◀", disabled=page == 0, key="discover_page_prev"):
+                page -= 1
+        with col_indicator:
+            start_n = page * ITEMS_PER_PAGE + 1
+            end_n = min((page + 1) * ITEMS_PER_PAGE, len(filtered))
+            st.caption(f"Items {start_n}-{end_n} of {len(filtered)}")
+        with col_next:
+            if st.button("▶", disabled=page >= total_pages - 1, key="discover_page_next"):
+                page += 1
+        st.session_state.discover_page = page
 
-    rows = min((len(filtered) + cols_per_row - 1) // cols_per_row, max_rows)
+        start = page * ITEMS_PER_PAGE
+        display_items = filtered.iloc[start : start + ITEMS_PER_PAGE]
+
+    # Only resolve image paths for the items on this page, not the whole
+    # filtered set - keeps the lookup query small. We already have "month"
+    # from the classification data, so only pull image_filename from the
+    # lookup (both sides having a "month" column would make pandas rename
+    # them to month_x/month_y on merge).
+    image_info = resolve_image_paths(display_items["record_id"].tolist())[["record_id", "image_filename"]]
+    display_items = display_items.merge(image_info, on="record_id", how="left")
+
+    rows = (len(display_items) + COLS_PER_ROW - 1) // COLS_PER_ROW
     for row_idx in range(rows):
-        cols = st.columns(cols_per_row)
-        for col_idx in range(cols_per_row):
-            item_idx = row_idx * cols_per_row + col_idx
-            if item_idx >= len(filtered):
+        cols = st.columns(COLS_PER_ROW)
+        for col_idx in range(COLS_PER_ROW):
+            item_idx = row_idx * COLS_PER_ROW + col_idx
+            if item_idx >= len(display_items):
                 break
-            item = filtered.iloc[item_idx]
+            item = display_items.iloc[item_idx]
             with cols[col_idx]:
                 _render_card(item, attrs_by_id.get(item["record_id"]))
 
