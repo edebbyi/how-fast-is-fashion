@@ -122,19 +122,21 @@ def main():
     # Top-level audience switch
     mode = st.radio(
         "",
-        ["Fashion", "Lab"],
+        ["Fashion", "Lab", "Curate"],
         horizontal=True,
         label_visibility="collapsed",
     )
 
     if mode == "Fashion":
         _render_fashion_view()
-    else:
+    elif mode == "Lab":
         st.caption(
             "Technical view: model internals, evaluation tools, and threshold "
             "tuning - not the audience-facing Fashion view."
         )
         _render_lab_view()
+    else:
+        _render_curate_view()
 
 
 def _render_fashion_view():
@@ -194,6 +196,21 @@ def _render_lab_view():
         from fashion_forensics.app.components.mlflow_panel import render_mlflow_panel
 
         render_mlflow_panel()
+
+
+def _render_curate_view():
+    """Review scraped candidate images and approve them into the reference
+    images set. Mutating, not read-only like Lab - kept as its own top-level
+    mode rather than a Lab tab."""
+    st.markdown("# Curate")
+    st.markdown(
+        '<p class="trend-label">Review scraped images for the trend classifier</p>',
+        unsafe_allow_html=True,
+    )
+
+    from fashion_forensics.app.components.review_queue import render_review_queue
+
+    render_review_queue()
 
 
 if __name__ == "__main__":

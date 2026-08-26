@@ -20,6 +20,13 @@ data/02_reference_corpus/boards/
 data/04_training/*.jsonl
 *.parquet
 
+# Scraped-and-approved reference images: copyrighted editorial photography,
+# not ours to redistribute like the hand-picked references. Kept local-only;
+# candidates.jsonl (source URL/hash provenance) is still committed.
+data/02_reference_corpus/labeled/*/scraped_*
+data/02_reference_corpus/phashes.json
+data/02_reference_corpus/.last_sync
+
 # Vector DB binary files — rebuildable from scripts/embed_reference_corpus.py
 data/02_reference_corpus/qdrant/
 

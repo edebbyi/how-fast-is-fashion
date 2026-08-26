@@ -20,12 +20,14 @@ dependencies = [
     "requests>=2.31",
     "beautifulsoup4>=4.12",
     "Pillow>=10.0",
+    "imagehash>=4.3",
 
     # NLP / trend detection
     "scikit-learn>=1.4",
     "scipy>=1.11",
     "google-genai>=1.0",
     "openai>=1.0",
+    "anthropic>=0.40",
 
     # Vector DB (reference corpus retrieval)
     "qdrant-client>=1.9",

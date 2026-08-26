@@ -1,0 +1,52 @@
+# Trend-image scraper configuration
+#
+# robots.txt on whowhatwear.com disallows scraping its own search results
+# (*searchTerm=* is in the Disallow list), so this scraper works from a
+# curated list of specific article URLs per trend rather than a live search
+# or a guessed tag-page URL pattern - those article URLs were found via a
+# one-off manual web search, not scraped programmatically.
+#
+# thezoereport.com added for source diversity (a reference corpus built from
+# one publication's photography style risks the classifier learning that
+# publication's look, not the trend). Checked before adding: robots.txt is
+# open, and the site declares an RSL license (rslcollective.org) explicitly
+# permitting AI training/input use, with an attribution requirement already
+# satisfied by candidates.jsonl storing source_url. Two other candidate
+# sites (Refinery29, PopSugar) were checked and skipped - both explicitly
+# block Anthropic-named crawlers in robots.txt, even though this scraper
+# uses a generic browser user-agent that wouldn't be caught by that block.
+
+request_timeout_seconds: 10
+retry_count: 3
+delay_between_requests_seconds: 3
+min_image_bytes: 8000
+user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+
+sites:
+  whowhatwear:
+    base_url: "https://www.whowhatwear.com"
+    articles:
+      quiet_luxury:
+        - "https://www.whowhatwear.com/quiet-luxury-outfits"
+      mob_wife:
+        - "https://www.whowhatwear.com/mob-wife-trend-outfits"
+        - "https://www.whowhatwear.com/fashion/outfit-ideas/faux-fur-coat-outfits"
+      office_siren:
+        - "https://www.whowhatwear.com/office-siren-tiktok-trend"
+        - "https://www.whowhatwear.com/fashion/sheer-clothing-trend"
+      basics:
+        - "https://www.whowhatwear.com/fashion/basics/best-wardrobe-basics-2026"
+
+  thezoereport:
+    base_url: "https://www.thezoereport.com"
+    articles:
+      quiet_luxury:
+        - "https://www.thezoereport.com/p/8-minimalist-outfits-for-fall-that-make-you-look-instantly-sophisticated-19260164"
+        - "https://www.thezoereport.com/fashion/minimalist-fashion-trend"
+      mob_wife:
+        - "https://www.thezoereport.com/fashion/how-to-style-a-faux-fur-coat"
+      office_siren:
+        - "https://www.thezoereport.com/p/kim-kardashians-leather-skirt-is-exactly-what-your-work-wardrobe-needs-21736044"
+        - "https://www.thezoereport.com/fashion/style-tips/fall-workwear-updates-to-try-now"
+      basics:
+        - "https://www.thezoereport.com/p/the-modern-wardrobe-staples-you-need-to-feel-put-together-43839776"
