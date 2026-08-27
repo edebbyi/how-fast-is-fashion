@@ -56,6 +56,7 @@ def render_review_queue():
     active_trends = sorted(trend_config["trends"].keys())
     deferred_trends = sorted(trend_config["deferred_trends"].keys())
     trend_options = active_trends + deferred_trends
+    trend_defs = {**trend_config["trends"], **trend_config["deferred_trends"]}
 
     col_status, col_trend = st.columns(2)
     with col_status:
@@ -111,7 +112,7 @@ def render_review_queue():
                     break
                 item = display_items.iloc[item_idx]
                 with cols[col_idx]:
-                    _render_candidate_card(item, trend_options)
+                    _render_candidate_card(item, trend_options, trend_defs)
 
     st.divider()
     _render_sync_button()
@@ -192,7 +193,7 @@ def _run_scrape_urls(site: str, trend: str, urls: list[str]) -> tuple[int, int, 
     return scrape_articles(site, trend, urls, max_images=15, dry_run=False)
 
 
-def _render_candidate_card(item: pd.Series, trend_options: list[str]) -> None:
+def _render_candidate_card(item: pd.Series, trend_options: list[str], trend_defs: dict) -> None:
     candidate_id = item["candidate_id"]
     img_path = PROJECT_ROOT / item["local_path"]
 
@@ -225,6 +226,7 @@ def _render_candidate_card(item: pd.Series, trend_options: list[str]) -> None:
             key=f"trend_{candidate_id}",
             label_visibility="collapsed",
         )
+        st.caption(_discriminating_detail_guidance(chosen_trend, trend_defs))
 
         col_a, col_r, col_d = st.columns(3)
         with col_a:
@@ -250,6 +252,20 @@ def _render_candidate_card(item: pd.Series, trend_options: list[str]) -> None:
                 curation.reject_candidate(candidate_id, "rejected", reason=reason)
                 del st.session_state[f"show_reject_{candidate_id}"]
                 st.rerun()
+
+
+def _discriminating_detail_guidance(trend: str, trend_defs: dict) -> str:
+    """What to actually check for before approving into this trend - reject
+    plain/generic images that don't show it, even if the source article was
+    genuinely about this trend. See notebook 03 section 14.2/14.6: the
+    curator's "real, on-topic article" bar isn't strict enough on its own
+    for trends defined more by absence than by a concrete visual signature.
+    """
+    entry = trend_defs.get(trend, {})
+    details = entry.get("discriminating_details") or []
+    if details:
+        return f"Look for: {', '.join(d.replace('_', ' ') for d in details)}. Reject plain pieces without any of these."
+    return "Defined by absence, not presence - reject anything with a distinctive feature that belongs to another trend instead."
 
 
 def _ensure_scripts_on_path() -> None:
