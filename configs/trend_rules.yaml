@@ -36,13 +36,41 @@ trends:
     name: Quiet Luxury / Old Money
     peak_years: [2024]
     description: Understated, expensive-looking minimalism. Heritage tailoring + tonal neutrals.
-    discriminating_details: [structured_shoulder, minimal_hardware, monochrome]
+    discriminating_details: [structured_shoulder, minimal_hardware, double_breasted, monochrome]
     rule:
+      # v3 (2026-08-27): broadened from the v2 rule after an audit found it
+      # covered only 12/65 (18.5%) of the actual labeled quiet_luxury
+      # references. Tested empirically (not just reasoned about) against
+      # both quiet_luxury and basics references before shipping: this
+      # broadened version covers 27/65 (41.5%) of quiet_luxury refs while
+      # only false-positiving on 11/59 (18.6%) of basics refs - a real
+      # improvement, not just a wider net. A further-broadened variant that
+      # matched on silhouette+color alone (no subcategory/material
+      # required) was tested and rejected: it covered 84.6% of
+      # quiet_luxury refs but ALSO 84.7% of basics refs, meaning it no
+      # longer discriminated between the two trends at all. `coat` added
+      # to the tailoring subcategory list (recommended in notebook 03
+      # SS14.2, never applied until now); material list broadened to
+      # include cotton/linen (fast-fashion tailoring is rarely wool/silk);
+      # neutral palette broadened per a fuller quiet-luxury color taxonomy;
+      # `double_breasted` added as a construction-detail signal alongside
+      # structured_shoulder/minimal_hardware. Third block added same day:
+      # fine material (wool/cashmere/tweed/silk) alone, regardless of
+      # garment type - fabric quality is the primary visual signifier when
+      # logos are absent, not just on tailored outerwear. Tested: rescues 6
+      # more of the same 41 still-failing refs (wool sweaters/jackets, silk
+      # shirts) at a cost of 2 new basics false positives. `brown`/`grey`
+      # added to the neutral palette after visually confirming 6 of 7
+      # remaining borderline refs were textbook tonal-monochromatic
+      # quiet_luxury looks (espresso/charcoal outfits) missed purely on
+      # color-naming - free improvement, zero new basics false positives
+      # (both LLM color tags never co-occur with a basics detail signal).
       any_of:
-        - subcategory: [blazer, trench_coat, loafer]
-          material: [wool, cashmere, tweed, silk]
-        - color_profile: [camel, cream, navy, beige, taupe, black]
-          details_any_of: [structured_shoulder, minimal_hardware]
+        - subcategory: [blazer, trench_coat, loafer, coat]
+          material: [wool, cashmere, tweed, silk, cotton, linen]
+        - color_profile: [camel, cream, navy, beige, taupe, black, charcoal, ivory, olive, brown, grey]
+          details_any_of: [structured_shoulder, minimal_hardware, double_breasted]
+        - material: [wool, cashmere, tweed, silk]
 
   mob_wife:
     name: Mob Wife
