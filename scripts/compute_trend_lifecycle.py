@@ -28,7 +28,6 @@ from loguru import logger
 from fashion_forensics.config import PROJECT_ROOT
 from fashion_forensics.nlp.lifecycle_classifier import LIFECYCLE_VERSION, classify_lifecycles
 from fashion_forensics.nlp.time_series_aggregation import (
-    CLASSIFICATIONS_PATH,
     aggregate_monthly_frequency,
     load_canonical_trends,
     load_classifications,
@@ -72,7 +71,9 @@ def main(
 
     trends = load_canonical_trends()
     n_months = len({r["month"] for r in records})
-    logger.info(f"Loaded {len(records)} classifications across {n_months} months, {len(trends)} trends")
+    logger.info(
+        f"Loaded {len(records)} classifications across {n_months} months, {len(trends)} trends"
+    )
 
     freq_df = aggregate_monthly_frequency(records, trends=trends, active_threshold=active_threshold)
     lifecycle_df = classify_lifecycles(
@@ -86,7 +87,9 @@ def main(
     )
 
     for _, row in lifecycle_df.iterrows():
-        logger.info(f"  {row['trend']:15s} {row['state']:20s} active_months={row['active_month_count']}")
+        logger.info(
+            f"  {row['trend']:15s} {row['state']:20s} active_months={row['active_month_count']}"
+        )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     freq_jsonl = OUTPUT_DIR / "monthly_trend_frequency.jsonl"

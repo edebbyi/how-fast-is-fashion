@@ -173,10 +173,16 @@ def _render_search_button() -> None:
         with st.spinner(f"Scraping {len(urls)} article(s) from {site}..."):
             result = _run_scrape_urls(site, search_trend, urls)
         totals = [a + b for a, b in zip(totals, result)]
-        st.caption(f"{site}: found {len(urls)} article(s) - {result[0]} new, {result[1]} duplicate, {result[2]} skipped.")
+        st.caption(
+            f"{site}: found {len(urls)} article(s) - {result[0]} new, "
+            f"{result[1]} duplicate, {result[2]} skipped."
+        )
 
     if found_any:
-        st.success(f"Total: {totals[0]} new candidates, {totals[1]} auto-flagged duplicates, {totals[2]} skipped.")
+        st.success(
+            f"Total: {totals[0]} new candidates, {totals[1]} auto-flagged duplicates, "
+            f"{totals[2]} skipped."
+        )
         st.rerun()
 
 
@@ -264,8 +270,12 @@ def _discriminating_detail_guidance(trend: str, trend_defs: dict) -> str:
     entry = trend_defs.get(trend, {})
     details = entry.get("discriminating_details") or []
     if details:
-        return f"Look for: {', '.join(d.replace('_', ' ') for d in details)}. Reject plain pieces without any of these."
-    return "Defined by absence, not presence - reject anything with a distinctive feature that belongs to another trend instead."
+        detail_list = ", ".join(d.replace("_", " ") for d in details)
+        return f"Look for: {detail_list}. Reject plain pieces without any of these."
+    return (
+        "Defined by absence, not presence - reject anything with a distinctive "
+        "feature that belongs to another trend instead."
+    )
 
 
 def _ensure_scripts_on_path() -> None:
@@ -281,7 +291,9 @@ def _ensure_scripts_on_path() -> None:
 
 def _render_sync_button() -> None:
     n_pending_sync = curation.pending_sync_count()
-    label = f"Sync {n_pending_sync} approved image{'s' if n_pending_sync != 1 else ''} to classifier"
+    label = (
+        f"Sync {n_pending_sync} approved image{'s' if n_pending_sync != 1 else ''} to classifier"
+    )
     if st.button(label, disabled=n_pending_sync == 0):
         with st.spinner("Syncing... this re-embeds the full set of reference images"):
             _run_sync()
@@ -336,7 +348,7 @@ def _render_evaluate_button() -> None:
         "(fast, ~30s) before spending ~30 minutes reclassifying the catalog. The "
         "before/after view below only lasts this browser session, but every click also "
         "logs accuracy, macro F1, and per-trend precision/recall/F1 to MLflow (experiment "
-        "\"reference-loocv\") - so real history across sessions lives in the MLflow tab, "
+        '"reference-loocv") - so real history across sessions lives in the MLflow tab, '
         "not here. The fuller evaluation harness (scripts/eval_trend_classifier.py, adds "
         "ECE + confusion matrix + UMAP) logs there too."
     )

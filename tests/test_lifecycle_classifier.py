@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from fashion_forensics.nlp.lifecycle_classifier import (
     LIFECYCLE_VERSION,
@@ -154,9 +153,7 @@ class TestClassifyLifecycles:
         months = _months(8)
         freqs = [0.0] * 5 + [0.20, 0.21, 0.22]
         active = [False] * 5 + [True, True, True]
-        rows = [
-            (m, "a", f, a) for m, f, a in zip(months, freqs, active, strict=True)
-        ]
+        rows = [(m, "a", f, a) for m, f, a in zip(months, freqs, active, strict=True)]
         # slope over last 3 points = (0.22-0.20)/2 = 0.01, active_run_length=3
         default_result = classify_lifecycles(_freq_df(rows))
         assert default_result.iloc[0]["state"] == "rising"  # run length 3 < persistent_min 4
@@ -165,9 +162,7 @@ class TestClassifyLifecycles:
         months2 = _months(10)
         freqs2 = [0.20] * 7 + [0.20, 0.21, 0.22]
         active2 = [True] * 10
-        rows2 = [
-            (m, "a", f, a) for m, f, a in zip(months2, freqs2, active2, strict=True)
-        ]
+        rows2 = [(m, "a", f, a) for m, f, a in zip(months2, freqs2, active2, strict=True)]
         loose = classify_lifecycles(_freq_df(rows2), rising_slope_threshold=0.03)
         tight = classify_lifecycles(_freq_df(rows2), rising_slope_threshold=0.005)
         assert loose.iloc[0]["state"] == "persistent"

@@ -59,7 +59,9 @@ class TestLoadSaveCandidates:
         assert curation.load_candidates() == {}
 
     def test_save_then_load_roundtrips(self, isolated_corpus):
-        records = {"c1": _candidate_record("c1", "data/02_reference_corpus/raw/quiet_luxury/c1.jpg")}
+        records = {
+            "c1": _candidate_record("c1", "data/02_reference_corpus/raw/quiet_luxury/c1.jpg")
+        }
         curation.save_candidates(records)
         assert curation.load_candidates() == records
 
@@ -112,7 +114,9 @@ class TestUniqueFilename:
 
 
 class TestApproveReject:
-    def _stage_candidate(self, isolated_corpus, candidate_id="c1", filename="c1.jpg", trend="quiet_luxury"):
+    def _stage_candidate(
+        self, isolated_corpus, candidate_id="c1", filename="c1.jpg", trend="quiet_luxury"
+    ):
         src_dir = isolated_corpus["raw_root"] / trend
         src_dir.mkdir(exist_ok=True)
         src_path = src_dir / filename

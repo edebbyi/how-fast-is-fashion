@@ -15,7 +15,6 @@ from fashion_forensics.nlp.ranking_engine import (
     rank_items,
     recall_at_k,
     score_a,
-    score_b,
     top_k_overlap,
     trend_match,
     trend_state_weight,
@@ -24,11 +23,21 @@ from fashion_forensics.nlp.ranking_engine import (
 
 def _normalized(**field_values: list[str]) -> dict:
     """Build a minimal normalized-attribute record: field -> list of values."""
-    return {field: {"value": values, "source": "image", "confidence": 0.8} for field, values in field_values.items()}
+    return {
+        field: {"value": values, "source": "image", "confidence": 0.8}
+        for field, values in field_values.items()
+    }
 
 
-def _item(record_id: str, trend_pred: str | None, category: str | None, normalized: dict | None = None) -> dict:
-    return {"record_id": record_id, "trend_pred": trend_pred, "category": category, "normalized": normalized}
+def _item(
+    record_id: str, trend_pred: str | None, category: str | None, normalized: dict | None = None
+) -> dict:
+    return {
+        "record_id": record_id,
+        "trend_pred": trend_pred,
+        "category": category,
+        "normalized": normalized,
+    }
 
 
 def _profile(**kwargs) -> dict:
@@ -128,14 +137,18 @@ class TestScoreComposition:
         # score_a = 0.6*1.0 + 0.4*1.0 = 1.0
         # score_b = 0.4*1.0 + 0.25*0.0 + 0.2*1.0 + 0.15*(0.5*0.0 gated off-trend) = 0.6
         item_off_trend = _item(
-            "r_off_trend", trend_pred="quiet_luxury", category="shirt",
+            "r_off_trend",
+            trend_pred="quiet_luxury",
+            category="shirt",
             normalized=_normalized(material=["cotton"], silhouette=["relaxed"]),
         )
         # Item 2: partial attribute match, but on-trend, category matches, and rising.
         # score_a = 0.6*0.5 + 0.4*1.0 = 0.7  (loses to item 1 under A)
         # score_b = 0.4*0.5 + 0.25*1.0 + 0.2*1.0 + 0.15*1.0(rising, engaged) = 0.8  (wins under B)
         item_on_trend = _item(
-            "r_on_trend", trend_pred="basics", category="shirt",
+            "r_on_trend",
+            trend_pred="basics",
+            category="shirt",
             normalized=_normalized(material=["cotton"]),
         )
         items = [item_off_trend, item_on_trend]
@@ -145,7 +158,10 @@ class TestScoreComposition:
             preferred_category="shirt",
             prefer_rising=True,
         )
-        lifecycle_by_trend = {"basics": {"state": "rising"}, "quiet_luxury": {"state": "persistent"}}
+        lifecycle_by_trend = {
+            "basics": {"state": "rising"},
+            "quiet_luxury": {"state": "persistent"},
+        }
 
         ranked_a = rank_items(items, profile, model="A")
         ranked_b = rank_items(items, profile, model="B", lifecycle_by_trend=lifecycle_by_trend)

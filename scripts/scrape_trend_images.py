@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 from loguru import logger
@@ -133,7 +133,7 @@ def scrape_article(
         dup_of = find_duplicate(phash, candidates, reference_phashes)
 
         ext = _detect_ext(sc.image_url)
-        candidate_id = f"{site}_{datetime.now(timezone.utc):%Y%m%d}_{phash[:10]}"
+        candidate_id = f"{site}_{datetime.now(UTC):%Y%m%d}_{phash[:10]}"
         dest_trend = sc.suggested_trend or "_unassigned"
         dest_dir = RAW_ROOT / dest_trend
         dest_dir.mkdir(parents=True, exist_ok=True)
@@ -148,7 +148,7 @@ def scrape_article(
             "source_site": site,
             "source_url": sc.source_url,
             "source_image_url": sc.image_url,
-            "scraped_at": datetime.now(timezone.utc).isoformat(),
+            "scraped_at": datetime.now(UTC).isoformat(),
             "suggested_trend": sc.suggested_trend,
             "suggestion_basis": sc.suggestion_basis,
             "phash": phash,
@@ -193,8 +193,17 @@ def scrape_articles(
     totals = [0, 0, 0]
     for article_url in article_urls:
         result = scrape_article(
-            session, config, parser_fn, site, article_url, trend, max_images,
-            candidates, existing_md5s, reference_phashes, dry_run,
+            session,
+            config,
+            parser_fn,
+            site,
+            article_url,
+            trend,
+            max_images,
+            candidates,
+            existing_md5s,
+            reference_phashes,
+            dry_run,
         )
         totals = [a + b for a, b in zip(totals, result)]
 
@@ -228,8 +237,17 @@ def main(site: str, trend: str | None, max_images: int, dry_run: bool) -> None:
     for t in trends_to_scrape:
         for article_url in articles_by_trend.get(t, []):
             result = scrape_article(
-                session, config, parser_fn, site, article_url, t, max_images,
-                candidates, existing_md5s, reference_phashes, dry_run,
+                session,
+                config,
+                parser_fn,
+                site,
+                article_url,
+                t,
+                max_images,
+                candidates,
+                existing_md5s,
+                reference_phashes,
+                dry_run,
             )
             n_new += result[0]
             n_duplicate += result[1]

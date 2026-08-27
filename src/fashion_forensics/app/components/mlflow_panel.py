@@ -44,10 +44,19 @@ def render_mlflow_panel():
         st.caption("No runs logged yet.")
         return
 
-    display_cols = [c for c in ("start_time", "experiment_id", "tags.mlflow.runName", "status") if c in runs.columns]
-    metric_cols = sorted(c for c in runs.columns if c.startswith("metrics.") and runs[c].notna().any())
+    display_cols = [
+        c
+        for c in ("start_time", "experiment_id", "tags.mlflow.runName", "status")
+        if c in runs.columns
+    ]
+    metric_cols = sorted(
+        c for c in runs.columns if c.startswith("metrics.") and runs[c].notna().any()
+    )
 
     table = runs[display_cols + metric_cols].rename(
-        columns={"tags.mlflow.runName": "run", **{c: c.replace("metrics.", "") for c in metric_cols}}
+        columns={
+            "tags.mlflow.runName": "run",
+            **{c: c.replace("metrics.", "") for c in metric_cols},
+        }
     )
     st.dataframe(table, width="stretch", hide_index=True)

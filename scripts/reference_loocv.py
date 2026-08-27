@@ -33,14 +33,14 @@ from __future__ import annotations
 import argparse
 import json
 
-from loguru import logger
-from sklearn.metrics import precision_recall_fscore_support
-
 from classify_catalog import (
     OUTPUT_DIR,
     calibrate_open_set_threshold,
     run_reference_loocv,
 )
+from loguru import logger
+from sklearn.metrics import precision_recall_fscore_support
+
 from fashion_forensics.config import PROJECT_ROOT, settings
 from fashion_forensics.retrieval.embedder import FashionClipEmbedder
 from fashion_forensics.retrieval.qdrant_store import TrendQdrantStore

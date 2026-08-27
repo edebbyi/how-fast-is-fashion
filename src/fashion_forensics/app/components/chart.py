@@ -29,11 +29,15 @@ STATE_ORDER = ["persistent", "rising", "declining", "seasonal_recurring", "inact
 # one trend's specific numbers. Every trend in a given state gets the same
 # text; the activity strip below is what shows the trend-specific history.
 STATE_DESCRIPTIONS = {
-    "persistent": "Been active for a while and holding roughly steady - not clearly growing or shrinking.",
-    "rising": "Active and growing in catalog share, or new enough that it's too early to call it steady.",
+    "persistent": "Been active for a while and holding roughly steady - "
+    "not clearly growing or shrinking.",
+    "rising": "Active and growing in catalog share, or new enough that "
+    "it's too early to call it steady.",
     "declining": "Still active, but its catalog share has been dropping recently.",
-    "seasonal_recurring": "Currently quiet, but has come back before - it comes and goes rather than staying gone for good.",
-    "inactive": "Not showing up enough to count as active, with no pattern to suggest it's coming back.",
+    "seasonal_recurring": "Currently quiet, but has come back before - "
+    "it comes and goes rather than staying gone for good.",
+    "inactive": "Not showing up enough to count as active, with no pattern "
+    "to suggest it's coming back.",
 }
 
 
@@ -51,7 +55,9 @@ def _activity_strip_html(trend_freq: pd.DataFrame) -> str:
     for _, row in trend_freq.iterrows():
         color = "var(--fg)" if row["is_active"] else "var(--border)"
         label = row["date"].strftime("%b %Y")
-        blocks.append(f'<div title="{label}" style="width:7px;height:16px;background:{color};"></div>')
+        blocks.append(
+            f'<div title="{label}" style="width:7px;height:16px;background:{color};"></div>'
+        )
     return '<div style="display:flex;gap:2px;">' + "".join(blocks) + "</div>"
 
 
@@ -101,7 +107,9 @@ def render_tracker():
     with col_year:
         selected_year = st.selectbox("YEAR", ["All", *years])
 
-    strip_freq = freq_df if selected_year == "All" else freq_df[freq_df["date"].dt.year == selected_year]
+    strip_freq = (
+        freq_df if selected_year == "All" else freq_df[freq_df["date"].dt.year == selected_year]
+    )
 
     # --- Pick which trends to show as badges: the one selected in the
     # filter, or a page of "All" trends (paginated once there are more than
@@ -121,7 +129,9 @@ def render_tracker():
             if st.button("◀", disabled=page == 0, key="trend_page_prev"):
                 page -= 1
         with col_indicator:
-            st.caption(f"Trends {page * TRENDS_PER_PAGE + 1}-{min((page + 1) * TRENDS_PER_PAGE, len(trends))} of {len(trends)}")
+            page_start = page * TRENDS_PER_PAGE + 1
+            page_end = min((page + 1) * TRENDS_PER_PAGE, len(trends))
+            st.caption(f"Trends {page_start}-{page_end} of {len(trends)}")
         with col_next:
             if st.button("▶", disabled=page >= total_pages - 1, key="trend_page_next"):
                 page += 1

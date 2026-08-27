@@ -213,7 +213,10 @@ def write_snapshot_md(
 
 
 def write_monthly_csv(
-    path: Path, monthly_counts: dict[str, dict[str, int]], months_sorted: list[str], columns: list[str]
+    path: Path,
+    monthly_counts: dict[str, dict[str, int]],
+    months_sorted: list[str],
+    columns: list[str],
 ) -> None:
     lines = ["month," + ",".join(columns)]
     for month in months_sorted:
@@ -223,7 +226,10 @@ def write_monthly_csv(
 
 
 def plot_monthly_counts(
-    monthly_counts: dict[str, dict[str, int]], months_sorted: list[str], columns: list[str], out_path: Path
+    monthly_counts: dict[str, dict[str, int]],
+    months_sorted: list[str],
+    columns: list[str],
+    out_path: Path,
 ) -> None:
     fig, ax = plt.subplots(figsize=(9, 5))
     for trend in columns:
@@ -364,7 +370,9 @@ def main(
             mlflow_tracker.log_metric(f"catalog_share_{trend}", count / total if total else 0.0)
         for step, month in enumerate(months_sorted):
             for trend in label_columns:
-                mlflow_tracker.log_metric(f"monthly_count_{trend}", monthly_counts[month][trend], step=step)
+                mlflow_tracker.log_metric(
+                    f"monthly_count_{trend}", monthly_counts[month][trend], step=step
+                )
 
         with tempfile.TemporaryDirectory() as tmpdir:
             plot_path = Path(tmpdir) / "trend_counts_over_time.png"
@@ -397,10 +405,14 @@ if __name__ == "__main__":
         "--months",
         nargs="+",
         default=None,
-        help="Restrict to specific YYYY-MM months (e.g. --months 2024-02 2024-03) for a smoke test.",
+        help="Restrict to specific YYYY-MM months (e.g. --months 2024-02 2024-03) "
+        "for a smoke test.",
     )
     parser.add_argument(
-        "--limit", type=int, default=None, help="Cap total records processed, after --months filtering."
+        "--limit",
+        type=int,
+        default=None,
+        help="Cap total records processed, after --months filtering.",
     )
     args = parser.parse_args()
     main(

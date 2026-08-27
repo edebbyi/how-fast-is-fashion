@@ -80,7 +80,9 @@ def render_threshold_explorer():
         current_coverage = len(kept) / len(loocv_df) if len(loocv_df) else 0.0
         current_precision = kept["correct"].mean() if len(kept) else float("nan")
         precision_text = (
-            f"{current_precision:.1%}" if pd.notna(current_precision) else "n/a (nothing clears this threshold)"
+            f"{current_precision:.1%}"
+            if pd.notna(current_precision)
+            else "n/a (nothing clears this threshold)"
         )
         st.caption(
             f"At threshold {threshold:.2f}: precision {precision_text}, coverage "
@@ -121,7 +123,9 @@ def _per_trend_precision_coverage(loocv_df: pd.DataFrame, threshold: float) -> p
         kept = group[group["max_sim"] >= threshold]
         coverage = len(kept) / len(group) if len(group) else 0.0
         precision = kept["correct"].mean() if len(kept) else float("nan")
-        rows.append({"trend": trend, "precision": precision, "coverage": coverage, "n_refs": len(group)})
+        rows.append(
+            {"trend": trend, "precision": precision, "coverage": coverage, "n_refs": len(group)}
+        )
     return pd.DataFrame(rows).set_index("trend")
 
 

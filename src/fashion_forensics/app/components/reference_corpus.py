@@ -12,7 +12,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from fashion_forensics.config import PROJECT_ROOT, DATA_DIR
+from fashion_forensics.config import DATA_DIR, PROJECT_ROOT
 
 ATTRIBUTES_PATH = DATA_DIR / "02_reference_corpus" / "attributes.jsonl"
 
@@ -29,11 +29,13 @@ def render_reference_corpus():
         st.caption(
             f"{n_pending_sync} image{'s' if n_pending_sync != 1 else ''} approved in Curate "
             f"but not shown here yet - this view only shows captioned images, and captions "
-            f"are only generated when you click \"Sync to classifier\" in Curate."
+            f'are only generated when you click "Sync to classifier" in Curate.'
         )
 
     if not ATTRIBUTES_PATH.exists():
-        st.info("No reference image captions found. Run scripts/normalize_reference_corpus.py first.")
+        st.info(
+            "No reference image captions found. Run scripts/normalize_reference_corpus.py first."
+        )
         return
 
     df = pd.read_json(ATTRIBUTES_PATH, lines=True)

@@ -128,9 +128,17 @@ def main(profile_name: str | None) -> None:
         top5_a = top_k(ranked_a, 5)
         top5_b = top_k(ranked_b, 5)
         for i in range(5):
-            a_desc = f"{top5_a[i]['record_id']} ({top5_a[i]['trend_pred']}, {top5_a[i]['score']:.3f})" if i < len(top5_a) else ""
-            b_desc = f"{top5_b[i]['record_id']} ({top5_b[i]['trend_pred']}, {top5_b[i]['score']:.3f})" if i < len(top5_b) else ""
-            section.append(f"| {i+1} | {a_desc} | {b_desc} |")
+            a_desc = (
+                f"{top5_a[i]['record_id']} ({top5_a[i]['trend_pred']}, {top5_a[i]['score']:.3f})"
+                if i < len(top5_a)
+                else ""
+            )
+            b_desc = (
+                f"{top5_b[i]['record_id']} ({top5_b[i]['trend_pred']}, {top5_b[i]['score']:.3f})"
+                if i < len(top5_b)
+                else ""
+            )
+            section.append(f"| {i + 1} | {a_desc} | {b_desc} |")
 
         for model_name, ranked in [("A", ranked_a), ("B", ranked_b)]:
             for k in K_VALUES:
@@ -138,16 +146,27 @@ def main(profile_name: str | None) -> None:
                 r = recall_at_k(ranked, profile, k)
                 f1 = f1_at_k(ranked, profile, k)
                 eval_rows.append(
-                    {"profile": name, "model": model_name, "k": k, "precision": p, "recall": r, "f1": f1}
+                    {
+                        "profile": name,
+                        "model": model_name,
+                        "k": k,
+                        "precision": p,
+                        "recall": r,
+                        "f1": f1,
+                    }
                 )
-                section.append(f"\nModel {model_name} @k={k}: precision={p:.3f} recall={r:.3f} f1={f1:.3f}")
+                section.append(
+                    f"\nModel {model_name} @k={k}: precision={p:.3f} recall={r:.3f} f1={f1:.3f}"
+                )
 
         summary_sections.append("\n".join(section) + "\n")
         logger.info(f"{name}: tau={tau:.3f} top5_overlap={overlap5:.3f}")
 
     eval_csv_path = OUTPUT_DIR / "eval_summary.csv"
     with open(eval_csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["profile", "model", "k", "precision", "recall", "f1"])
+        writer = csv.DictWriter(
+            f, fieldnames=["profile", "model", "k", "precision", "recall", "f1"]
+        )
         writer.writeheader()
         writer.writerows(eval_rows)
 

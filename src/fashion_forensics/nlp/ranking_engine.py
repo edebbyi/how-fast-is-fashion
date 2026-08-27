@@ -40,8 +40,8 @@ from loguru import logger
 from scipy.stats import kendalltau
 
 from fashion_forensics.db import connect
-from fashion_forensics.nlp.time_series_aggregation import load_classifications
 from fashion_forensics.nlp.tfidf_engine import load_normalized_records
+from fashion_forensics.nlp.time_series_aggregation import load_classifications
 
 RANKING_ENGINE_VERSION = "v1"
 
@@ -337,8 +337,7 @@ def load_ranking_catalog(
 
     con = connect()
     category_by_id = {
-        row[0]: row[1]
-        for row in con.execute("SELECT record_id, category FROM items").fetchall()
+        row[0]: row[1] for row in con.execute("SELECT record_id, category FROM items").fetchall()
     }
 
     catalog = []

@@ -10,7 +10,7 @@ from __future__ import annotations
 import io
 import json
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import imagehash
@@ -137,7 +137,7 @@ def approve_candidate(candidate_id: str, chosen_trend: str) -> dict:
     record["review_status"] = "approved"
     record["reviewed_trend"] = chosen_trend
     record["promoted_filename"] = final_name
-    record["promoted_at"] = datetime.now(timezone.utc).isoformat()
+    record["promoted_at"] = datetime.now(UTC).isoformat()
     candidates[candidate_id] = record
     save_candidates(candidates)
     return record
@@ -178,4 +178,4 @@ def _read_last_sync() -> str | None:
 
 def mark_synced() -> None:
     LAST_SYNC_PATH.parent.mkdir(parents=True, exist_ok=True)
-    LAST_SYNC_PATH.write_text(datetime.now(timezone.utc).isoformat())
+    LAST_SYNC_PATH.write_text(datetime.now(UTC).isoformat())

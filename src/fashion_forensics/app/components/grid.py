@@ -57,7 +57,9 @@ def render_drilldown():
         trend_options = ["All", *trends]
         default_trend = st.session_state.get("selected_trend", "All")
         default_index = trend_options.index(default_trend) if default_trend in trend_options else 0
-        selected_trend = st.selectbox("TREND", trend_options, index=default_index, key="discover_trend")
+        selected_trend = st.selectbox(
+            "TREND", trend_options, index=default_index, key="discover_trend"
+        )
 
     with col_unknown:
         include_unknown = st.checkbox("Include unclassified", value=False)
@@ -121,7 +123,9 @@ def render_drilldown():
     # from the classification data, so only pull image_filename from the
     # lookup (both sides having a "month" column would make pandas rename
     # them to month_x/month_y on merge).
-    image_info = resolve_image_paths(display_items["record_id"].tolist())[["record_id", "image_filename"]]
+    image_info = resolve_image_paths(display_items["record_id"].tolist())[
+        ["record_id", "image_filename"]
+    ]
     display_items = display_items.merge(image_info, on="record_id", how="left")
 
     rows = (len(display_items) + COLS_PER_ROW - 1) // COLS_PER_ROW
@@ -155,7 +159,8 @@ def _render_card(item: pd.Series, labels: dict | None) -> None:
 
     badge_class = confidence_badge_class(item.get("confidence"))
     st.markdown(
-        f'<span class="conf-badge {badge_class}">{item["trend_pred"]} {item["confidence"]:.2f}</span>',
+        f'<span class="conf-badge {badge_class}">'
+        f"{item['trend_pred']} {item['confidence']:.2f}</span>",
         unsafe_allow_html=True,
     )
     st.caption(item["month"])
@@ -165,7 +170,8 @@ def _render_card(item: pd.Series, labels: dict | None) -> None:
         if item.get("product_code"):
             st.caption(item["product_code"])
         st.markdown(
-            f'<span class="conf-badge {badge_class}">{item["trend_pred"]} {item["confidence"]:.2f}</span>',
+            f'<span class="conf-badge {badge_class}">'
+            f"{item['trend_pred']} {item['confidence']:.2f}</span>",
             unsafe_allow_html=True,
         )
         st.divider()
