@@ -74,10 +74,12 @@ trends:
     peak_years: []  # always present — not a trend, the absence of a trend
     description: >
       Plain unbranded staples (basic tees, plain jeans, simple knits, neutral
-      sweaters). Defined positively here so unbranded items have a class to
-      land in instead of being dropped into `unmapped`. Assigned by §3.5
-      retrieval (k-NN against labeled basics references), NOT by a rule —
-      the rule grammar can't express "absence of trend signals." Empty
+      sweaters) - also covers a plain, unstructured, no-hardware dress (e.g.
+      a slip dress) worn as a can-dress-up-or-down staple, not for its own
+      trend signature. Defined positively here so unbranded items have a
+      class to land in instead of being dropped into `unmapped`. Assigned by
+      §3.5 retrieval (k-NN against labeled basics references), NOT by a rule
+      — the rule grammar can't express "absence of trend signals." Empty
       `rule` block on purpose.
     discriminating_details: []
     rule:
