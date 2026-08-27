@@ -45,6 +45,7 @@
 {"rank": 45, "record_id": "2025-09_010", "trend_pred": "quiet_luxury", "category": null, "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
 {"rank": 46, "record_id": "2025-11_000", "trend_pred": "quiet_luxury", "category": "dress", "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
 {"rank": 47, "record_id": "2025-11_001", "trend_pred": "basics", "category": null, "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
-{"rank": 48, "record_id": "2025-12_000", "trend_pred": "basics", "category": "jeans", "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
-{"rank": 49, "record_id": "2026-01_000", "trend_pred": "basics", "category": "shirt", "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
-{"rank": 50, "record_id": "2026-01_002", "trend_pred": "basics", "category": "shirt", "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
+{"rank": 48, "record_id": "2025-11_002", "trend_pred": "basics", "category": "dress", "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
+{"rank": 49, "record_id": "2025-12_000", "trend_pred": "basics", "category": "jeans", "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
+{"rank": 50, "record_id": "2026-01_000", "trend_pred": "basics", "category": "shirt", "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}
+{"rank": 51, "record_id": "2026-01_002", "trend_pred": "basics", "category": "shirt", "score": 0.0, "components": {"attribute_match": 0.0, "category_match": 0.0}}

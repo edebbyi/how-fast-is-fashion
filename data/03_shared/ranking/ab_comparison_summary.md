@@ -4,7 +4,7 @@ Disclaimer: precision/recall/F1 are graded against the same profile fields used 
 
 ## synthetic_user_rising_basics
 
-kendall_tau=0.718  top5_overlap=0.429
+kendall_tau=0.677  top5_overlap=0.429
 
 | rank | Model A | Model B |
 |---|---|---|
@@ -24,7 +24,7 @@ Model B @k=10: precision=0.200 recall=1.000 f1=0.333
 
 ## synthetic_user_persistent_luxury
 
-kendall_tau=0.582  top5_overlap=0.429
+kendall_tau=0.598  top5_overlap=0.429
 
 | rank | Model A | Model B |
 |---|---|---|
@@ -44,13 +44,13 @@ Model B @k=10: precision=0.300 recall=1.000 f1=0.462
 
 ## synthetic_user_seasonal_mobwife
 
-kendall_tau=0.920  top5_overlap=0.429
+kendall_tau=0.923  top5_overlap=0.429
 
 | rank | Model A | Model B |
 |---|---|---|
-| 1 | 2024-11_000 (mob_wife, 1.000) | 2024-11_000 (mob_wife, 0.925) |
-| 2 | 2024-10_000 (quiet_luxury, 0.400) | 2024-08_000 (mob_wife, 0.325) |
-| 3 | 2024-10_001 (quiet_luxury, 0.300) | 2024-09_001 (mob_wife, 0.325) |
+| 1 | 2024-11_000 (mob_wife, 1.000) | 2024-11_000 (mob_wife, 0.805) |
+| 2 | 2024-10_000 (quiet_luxury, 0.400) | 2024-08_000 (mob_wife, 0.205) |
+| 3 | 2024-10_001 (quiet_luxury, 0.300) | 2024-09_001 (mob_wife, 0.205) |
 | 4 | 2024-12_000 (quiet_luxury, 0.300) | 2024-10_000 (quiet_luxury, 0.200) |
 | 5 | 2025-01_000 (quiet_luxury, 0.300) | 2024-10_001 (quiet_luxury, 0.200) |
 
@@ -64,7 +64,7 @@ Model B @k=10: precision=0.100 recall=1.000 f1=0.182
 
 ## synthetic_user_inactive_officesiren
 
-kendall_tau=0.923  top5_overlap=0.667
+kendall_tau=0.911  top5_overlap=0.667
 
 | rank | Model A | Model B |
 |---|---|---|
