@@ -44,12 +44,14 @@
 {"filename": "scraped_thezoereport_20260826_b67334cdc9.jpg", "true_trend": "basics", "predicted_trend": "quiet_luxury", "max_sim": 0.7845, "correct": false}
 {"filename": "scraped_thezoereport_20260826_bb6a6263c7.jpg", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.7602, "correct": true}
 {"filename": "scraped_thezoereport_20260826_bd9379800c.jpg", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.7036, "correct": true}
+{"filename": "scraped_thezoereport_20260826_e1679e9a6a.jpg", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.6665, "correct": true}
 {"filename": "scraped_thezoereport_20260826_e1879892c9.jpg", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.7155, "correct": true}
 {"filename": "scraped_thezoereport_20260826_e28dde7212.jpg", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.6773, "correct": true}
 {"filename": "scraped_thezoereport_20260826_e39a4ca699.jpg", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.7152, "correct": true}
 {"filename": "scraped_thezoereport_20260826_e3ce669998.jpg", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.7155, "correct": true}
 {"filename": "scraped_thezoereport_20260826_e48b9a64c7.webp", "true_trend": "basics", "predicted_trend": "quiet_luxury", "max_sim": 0.6076, "correct": false}
 {"filename": "scraped_thezoereport_20260826_e565c6b636.png", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.6335, "correct": true}
+{"filename": "scraped_thezoereport_20260826_e6a69964cc.png", "true_trend": "basics", "predicted_trend": "quiet_luxury", "max_sim": 0.5703, "correct": false}
 {"filename": "scraped_thezoereport_20260826_e736932ec9.jpg", "true_trend": "basics", "predicted_trend": "quiet_luxury", "max_sim": 0.732, "correct": false}
 {"filename": "scraped_whowhatwear_20260825_8e86b318fb.jpg", "true_trend": "basics", "predicted_trend": "quiet_luxury", "max_sim": 0.8177, "correct": false}
 {"filename": "scraped_whowhatwear_20260825_929b0de7e4.jpg", "true_trend": "basics", "predicted_trend": "basics", "max_sim": 0.8346, "correct": true}
@@ -126,7 +128,7 @@
 {"filename": "quiet-luxury-12.webp", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 1.0, "correct": true}
 {"filename": "quiet-luxury-13.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7734, "correct": true}
 {"filename": "quiet-luxury-2.webp", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7647, "correct": true}
-{"filename": "quiet-luxury-3.webp", "true_trend": "quiet_luxury", "predicted_trend": "basics", "max_sim": 0.9773, "correct": false}
+{"filename": "quiet-luxury-3.webp", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.9773, "correct": true}
 {"filename": "quiet-luxury-30.webp", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 1.0, "correct": true}
 {"filename": "quiet-luxury-31.jpg", "true_trend": "quiet_luxury", "predicted_trend": "basics", "max_sim": 0.694, "correct": false}
 {"filename": "quiet-luxury-32.jpeg", "true_trend": "quiet_luxury", "predicted_trend": "basics", "max_sim": 0.9199, "correct": false}
@@ -162,7 +164,7 @@
 {"filename": "quiet_luxury_40.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.8464, "correct": true}
 {"filename": "quiet_luxury_41.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.8464, "correct": true}
 {"filename": "quiet_luxury_42.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.8147, "correct": true}
-{"filename": "quiet_luxury_43.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7719, "correct": true}
+{"filename": "quiet_luxury_43.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.778, "correct": true}
 {"filename": "quiet_luxury_44.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7719, "correct": true}
 {"filename": "scraped_thezoereport_20260826_e68c198e4d.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7106, "correct": true}
 {"filename": "scraped_thezoereport_20260826_e6ce98936c.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.6428, "correct": true}
@@ -170,9 +172,8 @@
 {"filename": "scraped_whowhatwear_20260825_994e66b9f1.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7856, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_a024969d89.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7426, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_a4dcd92cca.jpg", "true_trend": "quiet_luxury", "predicted_trend": "basics", "max_sim": 0.765, "correct": false}
-{"filename": "scraped_whowhatwear_20260825_ad0ef41d41.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7353, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_ad34d2c5c2.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.8185, "correct": true}
-{"filename": "scraped_whowhatwear_20260825_b0bc4cd1c3.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7942, "correct": true}
+{"filename": "scraped_whowhatwear_20260825_b0bc4cd1c3.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.8316, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_b167e49cf1.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7571, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_b1c5ecb985.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.6405, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_b3c13234cc.jpg", "true_trend": "quiet_luxury", "predicted_trend": "basics", "max_sim": 0.7845, "correct": false}
@@ -182,6 +183,7 @@
 {"filename": "scraped_whowhatwear_20260825_cf66985ba6.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7074, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_d1b3abcb2c.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7262, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_e4ac1292e6.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.838, "correct": true}
+{"filename": "scraped_whowhatwear_20260825_e4de8b26da.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.8316, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_ea71b54cb0.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.8057, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_f0d81bf007.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7942, "correct": true}
 {"filename": "scraped_whowhatwear_20260825_f289cdc439.jpg", "true_trend": "quiet_luxury", "predicted_trend": "quiet_luxury", "max_sim": 0.7924, "correct": true}
