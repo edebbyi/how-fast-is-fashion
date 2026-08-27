@@ -14,6 +14,14 @@
 # "tops"/"outerwear", which never occur in the actual data and would silently
 # make category_match always 0). Each value below is the real, verified
 # category that actually co-occurs with the profile's target trend.
+#
+# Profile names (rising_basics, persistent_luxury, etc.) are mnemonics fixed
+# at creation time, not a live status - the lifecycle classifier gets re-run
+# as the catalog grows, so a trend's actual current state can drift away from
+# what a profile is named after. Each `real lifecycle state` comment below is
+# checked against data/03_shared/trend_lifecycle/lifecycle_states.jsonl as of
+# 2026-08-27; re-check it there if it looks stale rather than trusting this
+# comment or the profile name.
 
 user_profile_version: v1
 
@@ -27,14 +35,14 @@ profiles:
 
   synthetic_user_persistent_luxury:
     preferred_attributes: [wool, structured]
-    preferred_trends: [quiet_luxury]         # real lifecycle state: persistent
+    preferred_trends: [quiet_luxury]         # real lifecycle state: rising (was persistent when named)
     preferred_category: blazer               # most common quiet_luxury-trend category (3/13)
     prefer_rising: false
     avoid_declining: true
 
   synthetic_user_seasonal_mobwife:
     preferred_attributes: [faux_fur, relaxed]
-    preferred_trends: [mob_wife]             # real lifecycle state: seasonal_recurring
+    preferred_trends: [mob_wife]             # real lifecycle state: persistent (was seasonal_recurring when named)
     preferred_category: coat                 # one of the only 2 mob_wife-trend items (skirt/coat)
     prefer_rising: true
     avoid_declining: false
