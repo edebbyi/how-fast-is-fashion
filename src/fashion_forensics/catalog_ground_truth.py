@@ -51,7 +51,11 @@ def judge_item(
 
     confidence/max_sim are cast to plain float (or None) since callers
     often pass pandas/numpy values (e.g. a DataFrame row's .get() result),
-    which json.dumps can't serialize as-is."""
+    which json.dumps can't serialize as-is.
+
+    `reason` always starts empty here - it's a separate, optional step
+    (see add_reason) so a thumbs-down stays a single fast click, not
+    something that requires typing an explanation to register at all."""
     records = load_ground_truth()
     record = {
         "record_id": record_id,
@@ -59,8 +63,22 @@ def judge_item(
         "confidence": float(confidence) if confidence is not None else None,
         "max_sim": float(max_sim) if max_sim is not None else None,
         "judged_correct": bool(judged_correct),
+        "reason": None,
         "judged_at": datetime.now(UTC).isoformat(),
     }
     records[record_id] = record
     save_ground_truth(records)
     return record
+
+
+def add_reason(record_id: str, reason: str) -> dict:
+    """Attach (or replace) a brief free-text reason on an already-judged
+    item - e.g. why a 👎 prediction was wrong. Raises KeyError if
+    record_id hasn't been judged yet; a reason without a judgment doesn't
+    mean anything here."""
+    records = load_ground_truth()
+    if record_id not in records:
+        raise KeyError(f"{record_id!r} has not been judged yet - judge it before adding a reason")
+    records[record_id]["reason"] = reason.strip() or None
+    save_ground_truth(records)
+    return records[record_id]

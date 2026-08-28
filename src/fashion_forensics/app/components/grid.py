@@ -10,7 +10,7 @@ from fashion_forensics.app.components._shared import (
     render_attributes,
     resolve_image_paths,
 )
-from fashion_forensics.catalog_ground_truth import judge_item, load_ground_truth
+from fashion_forensics.catalog_ground_truth import add_reason, judge_item, load_ground_truth
 from fashion_forensics.config import DATA_DIR
 from fashion_forensics.nlp.tfidf_engine import load_normalized_records
 
@@ -49,7 +49,7 @@ def render_drilldown():
     ground_truth_by_id = load_ground_truth()
 
     # --- Filters ---
-    col_trend, col_unknown, col_month, col_attrs = st.columns(4)
+    col_trend, col_unknown, col_month, col_attrs, col_judgment = st.columns(5)
 
     trends = sorted(t for t in df["trend_pred"].unique() if t != "unknown")
 
@@ -81,6 +81,15 @@ def render_drilldown():
             "Only items with attributes", value=True, help=f"{len(attrs_by_id)} items have these"
         )
 
+    with col_judgment:
+        # Defaults to "All" (no filter) on purpose - opening Discover
+        # shouldn't already be narrowed to a judgment subset. Useful once
+        # you're actually collecting ground truth: "Unjudged" to find fresh
+        # items, or 👍/👎 to review what's already been judged.
+        judgment_filter = st.selectbox(
+            "JUDGMENT", ["All", "👍 Correct", "👎 Incorrect", "Unjudged"], key="discover_judgment"
+        )
+
     filtered = df.copy()
     if selected_trend != "All":
         filtered = filtered[filtered["trend_pred"] == selected_trend]
@@ -88,6 +97,14 @@ def render_drilldown():
         filtered = filtered[filtered["trend_pred"] != "unknown"]
     if selected_month != "All":
         filtered = filtered[filtered["month"] == selected_month]
+    if judgment_filter == "👍 Correct":
+        judged_ids = {rid for rid, r in ground_truth_by_id.items() if r["judged_correct"]}
+        filtered = filtered[filtered["record_id"].isin(judged_ids)]
+    elif judgment_filter == "👎 Incorrect":
+        judged_ids = {rid for rid, r in ground_truth_by_id.items() if not r["judged_correct"]}
+        filtered = filtered[filtered["record_id"].isin(judged_ids)]
+    elif judgment_filter == "Unjudged":
+        filtered = filtered[~filtered["record_id"].isin(ground_truth_by_id)]
     if only_with_attrs:
         filtered = filtered[filtered["record_id"].isin(attrs_by_id)]
 
@@ -206,6 +223,21 @@ def _render_judgment_row(item: pd.Series, judgment: dict | None) -> None:
     if judgment is not None:
         verdict = "correct" if judgment["judged_correct"] else "incorrect"
         st.caption(f"✓ judged: {verdict}")
+        if not judgment["judged_correct"]:
+            # Optional and separate from the thumbs-down click itself - a
+            # 👎 registers instantly either way, this just lets you add
+            # why, when you have a second to. Saves on Enter/blur, same as
+            # any other Streamlit text_input.
+            record_id = item["record_id"]
+            new_reason = st.text_input(
+                "Why? (optional)",
+                value=judgment.get("reason") or "",
+                key=f"judge_reason_{record_id}",
+                placeholder="e.g. wrong material, actually mob_wife",
+            )
+            if new_reason != (judgment.get("reason") or ""):
+                add_reason(record_id, new_reason)
+                st.rerun()
         return
 
     record_id = item["record_id"]

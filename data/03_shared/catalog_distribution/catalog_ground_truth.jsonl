@@ -1,0 +1,5 @@
+{"record_id": "2024-06_002", "trend_pred": "office_siren", "confidence": 1.0, "max_sim": 0.6643, "judged_correct": false, "judged_at": "2026-08-28T18:31:20.173075+00:00"}
+{"record_id": "2024-11_000", "trend_pred": "mob_wife", "confidence": 1.0, "max_sim": 0.736, "judged_correct": true, "judged_at": "2026-08-28T18:33:01.220298+00:00"}
+{"record_id": "2024-12_000", "trend_pred": "quiet_luxury", "confidence": 0.8021, "max_sim": 0.6645, "judged_correct": false, "judged_at": "2026-08-28T18:33:21.740390+00:00"}
+{"record_id": "2024-12_001", "trend_pred": "quiet_luxury", "confidence": 1.0, "max_sim": 0.668, "judged_correct": true, "judged_at": "2026-08-28T18:33:44.980010+00:00"}
+{"record_id": "2026-01_000", "trend_pred": "basics", "confidence": 1.0, "max_sim": 0.7276, "judged_correct": false, "judged_at": "2026-08-28T18:33:06.418638+00:00"}

@@ -40,6 +40,7 @@ def test_judge_item_writes_and_reads_back(isolated_ground_truth):
     assert record["confidence"] == 0.87
     assert record["max_sim"] == 0.71
     assert record["judged_correct"] is True
+    assert record["reason"] is None
     assert "judged_at" in record
 
 
@@ -114,3 +115,29 @@ def test_multiple_records_all_persisted(isolated_ground_truth):
 
     loaded = catalog_ground_truth.load_ground_truth()
     assert set(loaded) == {"a_record", "b_record"}
+
+
+def test_add_reason_attaches_to_existing_judgment(isolated_ground_truth):
+    catalog_ground_truth.judge_item("2024-02_004", "mob_wife", 0.8, 0.7, False)
+    record = catalog_ground_truth.add_reason("2024-02_004", "actually quiet_luxury")
+
+    assert record["reason"] == "actually quiet_luxury"
+    loaded = catalog_ground_truth.load_ground_truth()
+    assert loaded["2024-02_004"]["reason"] == "actually quiet_luxury"
+    # Judgment itself untouched by adding a reason.
+    assert loaded["2024-02_004"]["judged_correct"] is False
+
+
+def test_add_reason_strips_whitespace_and_blanks_out_empty(isolated_ground_truth):
+    catalog_ground_truth.judge_item("2024-02_005", "basics", 0.5, 0.5, False)
+
+    record = catalog_ground_truth.add_reason("2024-02_005", "  too plain  ")
+    assert record["reason"] == "too plain"
+
+    record = catalog_ground_truth.add_reason("2024-02_005", "   ")
+    assert record["reason"] is None
+
+
+def test_add_reason_unjudged_record_raises(isolated_ground_truth):
+    with pytest.raises(KeyError):
+        catalog_ground_truth.add_reason("never_judged", "some reason")
