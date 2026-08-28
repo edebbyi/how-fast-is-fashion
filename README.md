@@ -87,7 +87,6 @@ MLflow UI: `.venv/bin/mlflow ui --backend-store-uri sqlite:///mlflow.db`
 | [01_data_audit.ipynb](notebooks/01_data_audit.ipynb) | Monthly coverage, sample visualization, data QA |
 | [02_attributes_and_model.ipynb](notebooks/02_attributes_and_model.ipynb) | Teacher labeling, prompt-iteration lab |
 | [03_trend_classification.ipynb](notebooks/03_trend_classification.ipynb) | fashion-CLIP + Qdrant k-NN: LOOCV eval, voting ablation, UMAP, calibration diagrams, reference-curation investigation |
-| [04_ranking_evaluation.ipynb](notebooks/04_ranking_evaluation.ipynb) | Ranking engine (§3.9): weight sensitivity, Model A vs. B cross-profile comparison |
 
 ---
 
