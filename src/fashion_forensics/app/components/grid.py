@@ -10,6 +10,7 @@ from fashion_forensics.app.components._shared import (
     render_attributes,
     resolve_image_paths,
 )
+from fashion_forensics.catalog_ground_truth import judge_item, load_ground_truth
 from fashion_forensics.config import DATA_DIR
 from fashion_forensics.nlp.tfidf_engine import load_normalized_records
 
@@ -42,6 +43,10 @@ def render_drilldown():
     # per-card lookup (a Details popover's content still runs on every
     # rerun even when closed, so 100 individual lookups would be wasteful).
     attrs_by_id = {r["record_id"]: r for r in load_normalized_records()}
+
+    # Also loaded once, up front, same reasoning as attrs_by_id above - lets
+    # each card show "already judged" without a per-card file read.
+    ground_truth_by_id = load_ground_truth()
 
     # --- Filters ---
     col_trend, col_unknown, col_month, col_attrs = st.columns(4)
@@ -86,7 +91,10 @@ def render_drilldown():
     if only_with_attrs:
         filtered = filtered[filtered["record_id"].isin(attrs_by_id)]
 
-    st.caption(f"Showing {len(filtered)} items")
+    st.caption(
+        f"Showing {len(filtered)} items - {len(ground_truth_by_id)} judged so far "
+        "(👍/👎 on a card to help build a real ground-truth sample)"
+    )
     st.divider()
 
     if filtered.empty:
@@ -137,10 +145,14 @@ def render_drilldown():
                 break
             item = display_items.iloc[item_idx]
             with cols[col_idx]:
-                _render_card(item, attrs_by_id.get(item["record_id"]))
+                _render_card(
+                    item,
+                    attrs_by_id.get(item["record_id"]),
+                    ground_truth_by_id.get(item["record_id"]),
+                )
 
 
-def _render_card(item: pd.Series, labels: dict | None) -> None:
+def _render_card(item: pd.Series, labels: dict | None, judgment: dict | None) -> None:
     """Render one item's image, badge, and a Details popover with its full
     info (product name, trend, and attributes if available)."""
     img_path = None
@@ -164,6 +176,7 @@ def _render_card(item: pd.Series, labels: dict | None) -> None:
         unsafe_allow_html=True,
     )
     st.caption(item["month"])
+    _render_judgment_row(item, judgment)
 
     with st.popover("Details"):
         st.markdown(f"**{item.get('product_name') or item['record_id']}**")
@@ -181,3 +194,39 @@ def _render_card(item: pd.Series, labels: dict | None) -> None:
         # Detail tab's record ID lookup, without re-browsing to find it.
         st.caption("Record ID")
         st.code(item["record_id"], language=None)
+
+
+def _render_judgment_row(item: pd.Series, judgment: dict | None) -> None:
+    """Thumbs-up/down on whether trend_pred is actually correct for this
+    item - the real-catalog-data ground truth notebooks/03's LOOCV can't
+    give us, since that only measures the reference corpus against itself.
+    See RETROSPECTIVE.md section 9. Already-judged items show what was
+    recorded instead of the buttons, so a re-click can't accidentally
+    overwrite an earlier judgment."""
+    if judgment is not None:
+        verdict = "correct" if judgment["judged_correct"] else "incorrect"
+        st.caption(f"✓ judged: {verdict}")
+        return
+
+    record_id = item["record_id"]
+    col_up, col_down = st.columns(2)
+    with col_up:
+        if st.button("👍", key=f"judge_up_{record_id}", help="Prediction is correct"):
+            judge_item(
+                record_id=record_id,
+                trend_pred=item.get("trend_pred"),
+                confidence=item.get("confidence"),
+                max_sim=item.get("max_sim"),
+                judged_correct=True,
+            )
+            st.rerun()
+    with col_down:
+        if st.button("👎", key=f"judge_down_{record_id}", help="Prediction is wrong"):
+            judge_item(
+                record_id=record_id,
+                trend_pred=item.get("trend_pred"),
+                confidence=item.get("confidence"),
+                max_sim=item.get("max_sim"),
+                judged_correct=False,
+            )
+            st.rerun()
