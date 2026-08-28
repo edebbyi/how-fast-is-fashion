@@ -8,7 +8,6 @@ import streamlit as st
 from fashion_forensics.app.components._shared import (
     confidence_badge_class,
     render_attributes,
-    resolve_image_paths,
 )
 from fashion_forensics.catalog_ground_truth import (
     add_correction,
@@ -17,6 +16,7 @@ from fashion_forensics.catalog_ground_truth import (
     load_ground_truth,
 )
 from fashion_forensics.config import DATA_DIR
+from fashion_forensics.db import connect
 from fashion_forensics.nlp.tfidf_engine import load_normalized_records
 from fashion_forensics.nlp.time_series_aggregation import load_canonical_trends
 
@@ -27,6 +27,38 @@ RAW_IMAGES_DIR = DATA_DIR / "01_data_audit" / "raw_images"
 
 COLS_PER_ROW = 4
 ITEMS_PER_PAGE = 100  # 25 rows x 4 cols
+
+# Every widget interaction (a filter change, a page click, a thumbs-up)
+# triggers a full Streamlit rerun of this whole function - without
+# caching, that meant re-reading the ~2,000-item classifications file,
+# re-globbing every month's normalized-attributes file, and opening a
+# fresh DuckDB connection that rescans the whole raw catalog just to
+# resolve ~100 image paths, on every single click. Cached below with a
+# 5-minute TTL: long enough that reviewing hundreds of items in a row is
+# actually fast, short enough that a reclassify (which already takes
+# ~30 minutes and is a deliberate, rare action) shows up again without
+# needing to restart the app.
+_CACHE_TTL_SECONDS = 300
+
+
+@st.cache_data(ttl=_CACHE_TTL_SECONDS)
+def _load_classifications() -> pd.DataFrame:
+    return pd.read_json(CLASSIFICATIONS_PATH, lines=True)
+
+
+@st.cache_data(ttl=_CACHE_TTL_SECONDS)
+def _load_attrs_by_id() -> dict[str, dict]:
+    return {r["record_id"]: r for r in load_normalized_records()}
+
+
+@st.cache_data(ttl=_CACHE_TTL_SECONDS)
+def _load_image_index() -> pd.DataFrame:
+    """record_id -> image_filename/month for the whole catalog, in one
+    query - the per-page lookup below then just filters this in pandas
+    instead of hitting DuckDB again for every rerun."""
+    con = connect()
+    rows = con.execute("SELECT record_id, image_filename, month FROM items").fetchall()
+    return pd.DataFrame(rows, columns=["record_id", "image_filename", "month"])
 
 
 def render_drilldown():
@@ -42,13 +74,13 @@ def render_drilldown():
         st.info("No catalog classifications yet. Run scripts/classify_catalog.py first.")
         return
 
-    df = pd.read_json(CLASSIFICATIONS_PATH, lines=True)
+    df = _load_classifications()
 
     # Loaded once, up front - also used below to filter for "has
     # attributes" and to look up each shown card's attributes without a
     # per-card lookup (a Details popover's content still runs on every
     # rerun even when closed, so 100 individual lookups would be wasteful).
-    attrs_by_id = {r["record_id"]: r for r in load_normalized_records()}
+    attrs_by_id = _load_attrs_by_id()
 
     # Also loaded once, up front, same reasoning as attrs_by_id above - lets
     # each card show "already judged" without a per-card file read.
@@ -149,12 +181,14 @@ def render_drilldown():
         start = page * ITEMS_PER_PAGE
         display_items = filtered.iloc[start : start + ITEMS_PER_PAGE]
 
-    # Only resolve image paths for the items on this page, not the whole
-    # filtered set - keeps the lookup query small. We already have "month"
-    # from the classification data, so only pull image_filename from the
-    # lookup (both sides having a "month" column would make pandas rename
-    # them to month_x/month_y on merge).
-    image_info = resolve_image_paths(display_items["record_id"].tolist())[
+    # _load_image_index() is cached for the whole catalog - filtering it
+    # down to this page's record_ids here is a pandas lookup, not a fresh
+    # DuckDB query. We already have "month" from the classification data,
+    # so only pull image_filename from the lookup (both sides having a
+    # "month" column would make pandas rename them to month_x/month_y on
+    # merge).
+    image_info = _load_image_index()
+    image_info = image_info[image_info["record_id"].isin(display_items["record_id"])][
         ["record_id", "image_filename"]
     ]
     display_items = display_items.merge(image_info, on="record_id", how="left")
@@ -168,16 +202,23 @@ def render_drilldown():
                 break
             item = display_items.iloc[item_idx]
             with cols[col_idx]:
-                _render_card(
-                    item,
-                    attrs_by_id.get(item["record_id"]),
-                    ground_truth_by_id.get(item["record_id"]),
-                )
+                _render_card(item, attrs_by_id.get(item["record_id"]))
 
 
-def _render_card(item: pd.Series, labels: dict | None, judgment: dict | None) -> None:
+@st.fragment
+def _render_card(item: pd.Series, labels: dict | None) -> None:
     """Render one item's image, badge, and a Details popover with its full
-    info (product name, trend, and attributes if available)."""
+    info (product name, trend, and attributes if available).
+
+    @st.fragment scopes a rerun to just this one card - without it, every
+    single 👍/👎/reason/correction click was re-rendering the entire page
+    (all ~100 cards: every image, badge, and popover from scratch), which
+    is what made reviewing hundreds of items painfully slow. A fragment
+    rerun re-executes only this function, not render_drilldown() - so it
+    re-reads its own judgment status fresh each time (load_ground_truth()
+    is cheap - a small file) rather than trusting a value handed down from
+    the outer, now-stale render."""
+    judgment = load_ground_truth().get(item["record_id"])
     img_path = None
     if pd.notna(item.get("image_filename")):
         img_path = RAW_IMAGES_DIR / item["month"] / item["image_filename"]
