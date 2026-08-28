@@ -41,6 +41,7 @@ def test_judge_item_writes_and_reads_back(isolated_ground_truth):
     assert record["max_sim"] == 0.71
     assert record["judged_correct"] is True
     assert record["reason"] is None
+    assert record["corrected_trend"] is None
     assert "judged_at" in record
 
 
@@ -141,3 +142,35 @@ def test_add_reason_strips_whitespace_and_blanks_out_empty(isolated_ground_truth
 def test_add_reason_unjudged_record_raises(isolated_ground_truth):
     with pytest.raises(KeyError):
         catalog_ground_truth.add_reason("never_judged", "some reason")
+
+
+def test_add_correction_attaches_to_existing_judgment(isolated_ground_truth):
+    catalog_ground_truth.judge_item("2024-02_006", "quiet_luxury", 0.8, 0.7, False)
+    record = catalog_ground_truth.add_correction("2024-02_006", "mob_wife")
+
+    assert record["corrected_trend"] == "mob_wife"
+    loaded = catalog_ground_truth.load_ground_truth()
+    assert loaded["2024-02_006"]["corrected_trend"] == "mob_wife"
+    # Judgment itself untouched by adding a correction.
+    assert loaded["2024-02_006"]["judged_correct"] is False
+
+
+def test_add_correction_accepts_unknown_as_a_valid_value(isolated_ground_truth):
+    """'unknown' means the item doesn't belong to any of the 4 active
+    trends at all - a real, meaningful answer, not a placeholder."""
+    catalog_ground_truth.judge_item("2024-02_007", "basics", 0.5, 0.5, False)
+    record = catalog_ground_truth.add_correction("2024-02_007", "unknown")
+    assert record["corrected_trend"] == "unknown"
+
+
+def test_add_correction_none_clears_it(isolated_ground_truth):
+    catalog_ground_truth.judge_item("2024-02_008", "basics", 0.5, 0.5, False)
+    catalog_ground_truth.add_correction("2024-02_008", "mob_wife")
+
+    record = catalog_ground_truth.add_correction("2024-02_008", None)
+    assert record["corrected_trend"] is None
+
+
+def test_add_correction_unjudged_record_raises(isolated_ground_truth):
+    with pytest.raises(KeyError):
+        catalog_ground_truth.add_correction("never_judged", "mob_wife")

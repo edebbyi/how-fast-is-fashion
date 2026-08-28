@@ -1,5 +1,11 @@
-{"record_id": "2024-06_002", "trend_pred": "office_siren", "confidence": 1.0, "max_sim": 0.6643, "judged_correct": false, "judged_at": "2026-08-28T18:31:20.173075+00:00"}
+{"record_id": "2024-06_002", "trend_pred": "office_siren", "confidence": 1.0, "max_sim": 0.6643, "judged_correct": false, "judged_at": "2026-08-28T18:31:20.173075+00:00", "reason": "jacket is too loose and casual, dress is not defined."}
+{"record_id": "2024-07_000", "trend_pred": "quiet_luxury", "confidence": 0.7979, "max_sim": 0.6452, "judged_correct": true, "reason": null, "judged_at": "2026-08-28T18:38:47.027262+00:00"}
+{"record_id": "2024-07_119", "trend_pred": "quiet_luxury", "confidence": 0.7916000000000001, "max_sim": 0.7075, "judged_correct": true, "reason": null, "judged_at": "2026-08-28T18:39:29.939520+00:00"}
 {"record_id": "2024-11_000", "trend_pred": "mob_wife", "confidence": 1.0, "max_sim": 0.736, "judged_correct": true, "judged_at": "2026-08-28T18:33:01.220298+00:00"}
-{"record_id": "2024-12_000", "trend_pred": "quiet_luxury", "confidence": 0.8021, "max_sim": 0.6645, "judged_correct": false, "judged_at": "2026-08-28T18:33:21.740390+00:00"}
+{"record_id": "2024-11_002", "trend_pred": "quiet_luxury", "confidence": 0.7955, "max_sim": 0.709, "judged_correct": false, "reason": null, "judged_at": "2026-08-28T18:39:12.451704+00:00"}
+{"record_id": "2024-12_000", "trend_pred": "quiet_luxury", "confidence": 0.8021, "max_sim": 0.6645, "judged_correct": false, "judged_at": "2026-08-28T18:33:21.740390+00:00", "reason": "fur is more mob wife than quiet luxury."}
 {"record_id": "2024-12_001", "trend_pred": "quiet_luxury", "confidence": 1.0, "max_sim": 0.668, "judged_correct": true, "judged_at": "2026-08-28T18:33:44.980010+00:00"}
-{"record_id": "2026-01_000", "trend_pred": "basics", "confidence": 1.0, "max_sim": 0.7276, "judged_correct": false, "judged_at": "2026-08-28T18:33:06.418638+00:00"}
+{"record_id": "2025-02_002", "trend_pred": "quiet_luxury", "confidence": 0.6126, "max_sim": 0.6403, "judged_correct": true, "reason": null, "judged_at": "2026-08-28T18:41:13.274169+00:00"}
+{"record_id": "2025-05_025", "trend_pred": "quiet_luxury", "confidence": 0.7974, "max_sim": 0.6476000000000001, "judged_correct": true, "reason": null, "judged_at": "2026-08-28T18:39:03.691957+00:00"}
+{"record_id": "2025-11_001", "trend_pred": "basics", "confidence": 0.6074, "max_sim": 0.7655000000000001, "judged_correct": false, "reason": null, "judged_at": "2026-08-28T18:39:46.810188+00:00"}
+{"record_id": "2026-01_000", "trend_pred": "basics", "confidence": 1.0, "max_sim": 0.7276, "judged_correct": false, "judged_at": "2026-08-28T18:33:06.418638+00:00", "reason": "top and bottoms are heavily patterned"}

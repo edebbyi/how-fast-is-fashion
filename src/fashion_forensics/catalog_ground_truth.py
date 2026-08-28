@@ -53,9 +53,10 @@ def judge_item(
     often pass pandas/numpy values (e.g. a DataFrame row's .get() result),
     which json.dumps can't serialize as-is.
 
-    `reason` always starts empty here - it's a separate, optional step
-    (see add_reason) so a thumbs-down stays a single fast click, not
-    something that requires typing an explanation to register at all."""
+    `reason`/`corrected_trend` always start empty here - both are
+    separate, optional steps (see add_reason / add_correction) so a
+    thumbs-down stays a single fast click, not something that requires
+    filling in more detail to register at all."""
     records = load_ground_truth()
     record = {
         "record_id": record_id,
@@ -64,6 +65,7 @@ def judge_item(
         "max_sim": float(max_sim) if max_sim is not None else None,
         "judged_correct": bool(judged_correct),
         "reason": None,
+        "corrected_trend": None,
         "judged_at": datetime.now(UTC).isoformat(),
     }
     records[record_id] = record
@@ -80,5 +82,21 @@ def add_reason(record_id: str, reason: str) -> dict:
     if record_id not in records:
         raise KeyError(f"{record_id!r} has not been judged yet - judge it before adding a reason")
     records[record_id]["reason"] = reason.strip() or None
+    save_ground_truth(records)
+    return records[record_id]
+
+
+def add_correction(record_id: str, corrected_trend: str | None) -> dict:
+    """Record what the trend actually should have been on an already-
+    judged item - e.g. the model said quiet_luxury, it's really mob_wife
+    (or "unknown", meaning it doesn't belong to any of the 4 active
+    trends at all). Raises KeyError if record_id hasn't been judged yet,
+    same as add_reason."""
+    records = load_ground_truth()
+    if record_id not in records:
+        raise KeyError(
+            f"{record_id!r} has not been judged yet - judge it before adding a correction"
+        )
+    records[record_id]["corrected_trend"] = corrected_trend or None
     save_ground_truth(records)
     return records[record_id]

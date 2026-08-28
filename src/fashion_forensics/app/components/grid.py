@@ -10,9 +10,15 @@ from fashion_forensics.app.components._shared import (
     render_attributes,
     resolve_image_paths,
 )
-from fashion_forensics.catalog_ground_truth import add_reason, judge_item, load_ground_truth
+from fashion_forensics.catalog_ground_truth import (
+    add_correction,
+    add_reason,
+    judge_item,
+    load_ground_truth,
+)
 from fashion_forensics.config import DATA_DIR
 from fashion_forensics.nlp.tfidf_engine import load_normalized_records
+from fashion_forensics.nlp.time_series_aggregation import load_canonical_trends
 
 CLASSIFICATIONS_PATH = (
     DATA_DIR / "03_shared" / "catalog_distribution" / "catalog_classifications.jsonl"
@@ -224,16 +230,33 @@ def _render_judgment_row(item: pd.Series, judgment: dict | None) -> None:
         verdict = "correct" if judgment["judged_correct"] else "incorrect"
         st.caption(f"✓ judged: {verdict}")
         if not judgment["judged_correct"]:
-            # Optional and separate from the thumbs-down click itself - a
-            # 👎 registers instantly either way, this just lets you add
-            # why, when you have a second to. Saves on Enter/blur, same as
-            # any other Streamlit text_input.
+            # Both optional and separate from the thumbs-down click itself
+            # - a 👎 registers instantly either way, these just let you add
+            # detail when you have a second to. Each saves independently
+            # (on Enter/blur for the text input, on change for the select).
             record_id = item["record_id"]
+
+            correction_options = ["(not specified)", *load_canonical_trends(), "unknown"]
+            current_correction = judgment.get("corrected_trend") or "(not specified)"
+            new_correction = st.selectbox(
+                "What should it be?",
+                correction_options,
+                index=correction_options.index(current_correction)
+                if current_correction in correction_options
+                else 0,
+                key=f"judge_correction_{record_id}",
+            )
+            if new_correction != current_correction:
+                add_correction(
+                    record_id, None if new_correction == "(not specified)" else new_correction
+                )
+                st.rerun()
+
             new_reason = st.text_input(
                 "Why? (optional)",
                 value=judgment.get("reason") or "",
                 key=f"judge_reason_{record_id}",
-                placeholder="e.g. wrong material, actually mob_wife",
+                placeholder="e.g. wrong material",
             )
             if new_reason != (judgment.get("reason") or ""):
                 add_reason(record_id, new_reason)
