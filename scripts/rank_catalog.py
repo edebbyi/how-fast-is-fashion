@@ -22,6 +22,7 @@ top-K overlap don't have that problem and should be trusted more.
 Outputs (data/03_shared/ranking/):
   - rankings_<profile>_modelA.jsonl / _modelB.jsonl   full scored+ranked lists
   - eval_summary.csv                                   precision/recall/F1 @ k
+  - model_comparison_summary.csv                       kendall_tau/top5_overlap per profile
   - ab_comparison_summary.md                           top-5 side-by-side, tau, overlap
 
 Logs to MLflow (experiment "ranking-eval").
@@ -61,12 +62,10 @@ PROFILES_PATH = PROJECT_ROOT / "configs" / "user_profiles.yaml"
 K_VALUES = (5, 10)
 
 CAVEAT = (
-    "Precision/recall/F1 decide what counts as \"relevant\" using each profile's own "
-    "stated preferred_trends/preferred_category fields. So these numbers only show "
-    "whether a scoring formula matches its own inputs -- they are NOT a measure of "
-    "real recommendation quality, since there's no independent user feedback to check "
-    "against. Kendall's tau and top-K overlap don't have that problem and should be "
-    "trusted more when reading these results."
+    "Disclaimer: precision/recall/F1 are graded against the same profile fields "
+    "used to score each item, so they're circular -- not proof of real "
+    "recommendation quality. Trust Kendall's tau and top-K overlap instead; they "
+    "just measure how much Model A and B actually differ."
 )
 
 
@@ -109,6 +108,7 @@ def main(profile_name: str | None) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     eval_rows = []
+    comparison_rows = []
     summary_sections = [f"# Ranking engine A/B comparison\n\n{CAVEAT}\n"]
 
     for name, profile in profiles.items():
@@ -120,6 +120,7 @@ def main(profile_name: str | None) -> None:
 
         tau = kendall_tau(ranked_a, ranked_b)
         overlap5 = top_k_overlap(ranked_a, ranked_b, k=5)
+        comparison_rows.append({"profile": name, "kendall_tau": tau, "top5_overlap": overlap5})
 
         section = [f"## {name}\n", f"kendall_tau={tau:.3f}  top5_overlap={overlap5:.3f}\n"]
         section.append("| rank | Model A | Model B |")
@@ -127,9 +128,17 @@ def main(profile_name: str | None) -> None:
         top5_a = top_k(ranked_a, 5)
         top5_b = top_k(ranked_b, 5)
         for i in range(5):
-            a_desc = f"{top5_a[i]['record_id']} ({top5_a[i]['trend_pred']}, {top5_a[i]['score']:.3f})" if i < len(top5_a) else ""
-            b_desc = f"{top5_b[i]['record_id']} ({top5_b[i]['trend_pred']}, {top5_b[i]['score']:.3f})" if i < len(top5_b) else ""
-            section.append(f"| {i+1} | {a_desc} | {b_desc} |")
+            a_desc = (
+                f"{top5_a[i]['record_id']} ({top5_a[i]['trend_pred']}, {top5_a[i]['score']:.3f})"
+                if i < len(top5_a)
+                else ""
+            )
+            b_desc = (
+                f"{top5_b[i]['record_id']} ({top5_b[i]['trend_pred']}, {top5_b[i]['score']:.3f})"
+                if i < len(top5_b)
+                else ""
+            )
+            section.append(f"| {i + 1} | {a_desc} | {b_desc} |")
 
         for model_name, ranked in [("A", ranked_a), ("B", ranked_b)]:
             for k in K_VALUES:
@@ -137,18 +146,39 @@ def main(profile_name: str | None) -> None:
                 r = recall_at_k(ranked, profile, k)
                 f1 = f1_at_k(ranked, profile, k)
                 eval_rows.append(
-                    {"profile": name, "model": model_name, "k": k, "precision": p, "recall": r, "f1": f1}
+                    {
+                        "profile": name,
+                        "model": model_name,
+                        "k": k,
+                        "precision": p,
+                        "recall": r,
+                        "f1": f1,
+                    }
                 )
-                section.append(f"\nModel {model_name} @k={k}: precision={p:.3f} recall={r:.3f} f1={f1:.3f}")
+                section.append(
+                    f"\nModel {model_name} @k={k}: precision={p:.3f} recall={r:.3f} f1={f1:.3f}"
+                )
 
         summary_sections.append("\n".join(section) + "\n")
         logger.info(f"{name}: tau={tau:.3f} top5_overlap={overlap5:.3f}")
 
     eval_csv_path = OUTPUT_DIR / "eval_summary.csv"
     with open(eval_csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["profile", "model", "k", "precision", "recall", "f1"])
+        writer = csv.DictWriter(
+            f, fieldnames=["profile", "model", "k", "precision", "recall", "f1"]
+        )
         writer.writeheader()
         writer.writerows(eval_rows)
+
+    # Small, structured, per-profile - the numbers the disclaimer above
+    # points to as the trustworthy ones, kept separate from eval_summary.csv
+    # (which is precision/recall/F1 per model/k, a different shape) so
+    # Streamlit can look one up without parsing the markdown summary.
+    comparison_csv_path = OUTPUT_DIR / "model_comparison_summary.csv"
+    with open(comparison_csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["profile", "kendall_tau", "top5_overlap"])
+        writer.writeheader()
+        writer.writerows(comparison_rows)
 
     summary_md_path = OUTPUT_DIR / "ab_comparison_summary.md"
     summary_md_path.write_text("\n".join(summary_sections))

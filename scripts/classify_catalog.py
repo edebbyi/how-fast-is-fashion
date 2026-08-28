@@ -146,15 +146,21 @@ def discover_refs() -> tuple[list[Path], list[str]]:
     return paths, labels
 
 
-def calibrate_open_set_threshold(
+def run_reference_loocv(
     embedder: FashionClipEmbedder, store: TrendQdrantStore, k: int, vote_method: str
-) -> float:
-    """5th percentile of correct-prediction max-similarity, LOOCV over the
-    reference corpus in image mode. Computed fresh (not reused from a hybrid
-    eval run) since the similarity distribution is mode-specific."""
+) -> list[dict]:
+    """LOOCV over the reference corpus in image mode: hold out each labeled
+    image, classify it against the rest, and record whether the prediction
+    was correct along with its max similarity to its best match.
+
+    This is the only place "correct" is actually knowable (catalog items
+    have no ground truth) - used both to auto-calibrate the open-set
+    threshold below, and exported to disk so the Threshold Explorer's
+    precision/coverage panel can show real accuracy at a given threshold,
+    not just how the catalog-wide count shifts.
+    """
     paths, labels = discover_refs()
-    max_sims: list[float] = []
-    correct: list[bool] = []
+    results: list[dict] = []
     for path, label in zip(paths, labels):
         pred = predict_trend(
             image_path=path,
@@ -165,9 +171,25 @@ def calibrate_open_set_threshold(
             search_mode="image",
             exclude_filenames=[path.name],
         )
-        max_sims.append(max((n["score"] for n in pred.matched_refs), default=0.0))
-        correct.append(pred.trend_pred == label)
-    correct_sims = np.array(max_sims)[np.array(correct)]
+        max_sim = max((n["score"] for n in pred.matched_refs), default=0.0)
+        results.append(
+            {
+                "filename": path.name,
+                "true_trend": label,
+                "predicted_trend": pred.trend_pred,
+                "max_sim": round(max_sim, 4),
+                "correct": pred.trend_pred == label,
+            }
+        )
+    return results
+
+
+def calibrate_open_set_threshold(loocv_results: list[dict]) -> float:
+    """5th percentile of correct-prediction max-similarity, from a
+    reference-corpus LOOCV pass (see run_reference_loocv)."""
+    max_sims = np.array([r["max_sim"] for r in loocv_results])
+    correct = np.array([r["correct"] for r in loocv_results])
+    correct_sims = max_sims[correct]
     return float(np.percentile(correct_sims, 5)) if len(correct_sims) else 0.0
 
 
@@ -191,7 +213,10 @@ def write_snapshot_md(
 
 
 def write_monthly_csv(
-    path: Path, monthly_counts: dict[str, dict[str, int]], months_sorted: list[str], columns: list[str]
+    path: Path,
+    monthly_counts: dict[str, dict[str, int]],
+    months_sorted: list[str],
+    columns: list[str],
 ) -> None:
     lines = ["month," + ",".join(columns)]
     for month in months_sorted:
@@ -201,7 +226,10 @@ def write_monthly_csv(
 
 
 def plot_monthly_counts(
-    monthly_counts: dict[str, dict[str, int]], months_sorted: list[str], columns: list[str], out_path: Path
+    monthly_counts: dict[str, dict[str, int]],
+    months_sorted: list[str],
+    columns: list[str],
+    out_path: Path,
 ) -> None:
     fig, ax = plt.subplots(figsize=(9, 5))
     for trend in columns:
@@ -244,7 +272,8 @@ def main(
         )
 
     if open_set_threshold is None:
-        open_set_threshold = calibrate_open_set_threshold(embedder, store, k, vote_method)
+        loocv_results = run_reference_loocv(embedder, store, k, vote_method)
+        open_set_threshold = calibrate_open_set_threshold(loocv_results)
         logger.info(f"Auto-calibrated open-set threshold: {open_set_threshold:.3f}")
 
     session = requests.Session()
@@ -268,6 +297,7 @@ def main(
             open_set_threshold=open_set_threshold,
         )
         trend_pred = "unknown" if prediction.open_set_unknown else prediction.trend_pred
+        max_sim = max((n["score"] for n in prediction.matched_refs), default=0.0)
         results.append(
             {
                 "record_id": record["record_id"],
@@ -277,6 +307,13 @@ def main(
                 "trend_pred": trend_pred,
                 "confidence": prediction.confidence,
                 "open_set_unknown": prediction.open_set_unknown,
+                # The trend the classifier actually voted for, before the
+                # open-set threshold collapses it to "unknown", plus the raw
+                # max similarity that threshold gets compared against - so a
+                # different threshold can be explored later without needing
+                # to re-run the classifier (see the Lab "Threshold Explorer").
+                "winning_trend": prediction.trend_pred,
+                "max_sim": round(max_sim, 4),
             }
         )
         if i % 100 == 0:
@@ -333,7 +370,9 @@ def main(
             mlflow_tracker.log_metric(f"catalog_share_{trend}", count / total if total else 0.0)
         for step, month in enumerate(months_sorted):
             for trend in label_columns:
-                mlflow_tracker.log_metric(f"monthly_count_{trend}", monthly_counts[month][trend], step=step)
+                mlflow_tracker.log_metric(
+                    f"monthly_count_{trend}", monthly_counts[month][trend], step=step
+                )
 
         with tempfile.TemporaryDirectory() as tmpdir:
             plot_path = Path(tmpdir) / "trend_counts_over_time.png"
@@ -366,10 +405,14 @@ if __name__ == "__main__":
         "--months",
         nargs="+",
         default=None,
-        help="Restrict to specific YYYY-MM months (e.g. --months 2024-02 2024-03) for a smoke test.",
+        help="Restrict to specific YYYY-MM months (e.g. --months 2024-02 2024-03) "
+        "for a smoke test.",
     )
     parser.add_argument(
-        "--limit", type=int, default=None, help="Cap total records processed, after --months filtering."
+        "--limit",
+        type=int,
+        default=None,
+        help="Cap total records processed, after --months filtering.",
     )
     args = parser.parse_args()
     main(

@@ -1,6 +1,6 @@
 # How Fast Is Fashion
 
-**A temporal trend-intelligence pipeline for fast-fashion retail.** Collects monthly snapshots of retailer imagery, normalizes garments into structured attributes via multi-modal LLM perception, assigns trend labels through three parallel signals (rule engine + fashion-CLIP + LoRA), tracks trend lifecycles over a rolling 24-month window, and ranks inventory against user preference profiles with lifecycle-aware scoring.
+**A temporal trend-intelligence pipeline for fast-fashion retail.** Collects monthly snapshots of retailer imagery, normalizes garments into structured attributes via multi-modal LLM perception, assigns trend labels through two parallel signals (rule engine + fashion-CLIP retrieval — a third, a fine-tuned LoRA classifier, is deliberately deferred past v1.0), tracks trend lifecycles over a rolling 24-month window, and ranks inventory against user preference profiles with lifecycle-aware scoring.
 
 Primary data window: `2024-02` through `2026-02`. Primary retailer for v1: **Zara**.
 
@@ -19,12 +19,12 @@ Fashion is temporal. A recommendation that shows you "quiet luxury" items *after
 ```
 Raw retail snapshots
   → LLM perception (image + text → structured attributes)
-  → Three parallel trend signals:
+  → Two parallel trend signals (v1.0 scope):
        • Rule engine (symbolic, over normalized attributes)
        • FashionCLIP + Qdrant k-NN (vector retrieval over labeled refs)
-       • Student LoRA (PaliGemma, fine-tuned) — planned
+       • Student LoRA (PaliGemma, fine-tuned) — deferred past v1.0, see below
   → Monthly aggregation → Lifecycle classification
-  → Ranking (attribute-only baseline vs. lifecycle-aware)
+  → Ranking (attribute-only baseline vs. lifecycle-aware, synthetic profiles — real user data also deferred past v1.0)
   → Insight layer + Streamlit interface
 ```
 
@@ -39,13 +39,14 @@ Raw retail snapshots
 | Attribute schema | `configs/trend_rules.yaml` | shipped |
 | Rule engine | `src/fashion_forensics/nlp/trend_engine.py` | shipped |
 | **Retrieval: fashion-CLIP + Qdrant k-NN** | `src/fashion_forensics/retrieval/` | **shipped (v4)** |
-| Student LoRA classifier | `src/fashion_forensics/training/lora.py` | scaffold only |
-| Time-series aggregation | | planned |
-| Lifecycle classifier | | planned |
-| Ranking engine (A/B) | | planned |
-| Streamlit app | `src/fashion_forensics/app/` | scaffold only |
+| Automated reference-image curator (scrape/review/promote) | `src/fashion_forensics/curation.py` | shipped |
+| Time-series aggregation | `src/fashion_forensics/nlp/time_series_aggregation.py` | shipped |
+| Lifecycle classifier | `src/fashion_forensics/nlp/lifecycle_classifier.py` | shipped |
+| Ranking engine (A/B) | `src/fashion_forensics/nlp/ranking_engine.py` | shipped — synthetic profiles only; real user data deferred past v1.0 |
+| Streamlit app (Fashion / Lab / Curate) | `src/fashion_forensics/app/` | shipped |
+| Student LoRA classifier | `src/fashion_forensics/training/lora.py` | scaffold only — **deliberately deferred past v1.0** (two signals validate the core hypothesis; the reference corpus is also too small to fine-tune on as-is, e.g. `office_siren` has only 28 labeled images) |
 
-See the [ARCHITECTURE.md revision log](ARCHITECTURE.md#12-architecture-revision-log) for details on v1–v4.
+See the [ARCHITECTURE.md revision log](ARCHITECTURE.md#12-architecture-revision-log) for the full history (v1–v17).
 
 ---
 
@@ -54,15 +55,15 @@ See the [ARCHITECTURE.md revision log](ARCHITECTURE.md#12-architecture-revision-
 The fashion-CLIP + Qdrant k-NN trend classifier (§3.5) is the most complete stage. To reproduce:
 
 ```bash
-# 1. Clone and set up a Python 3.13 virtualenv
-python3.13 -m venv .venv
+# 1. Clone and set up a Python 3.11+ virtualenv
+python3.11 -m venv .venv
 .venv/bin/pip install -e '.[training,dev]'
 
 # 2. Configure env (copy and fill in LLM / Langfuse keys if needed)
 cp .env.example .env
 
 # 3. Labeled reference images live under:
-#    data/02_reference_corpus/labeled/{mob_wife,office_siren,quiet_luxury}/
+#    data/02_reference_corpus/labeled/{basics,mob_wife,office_siren,quiet_luxury}/
 #    Drop more images into any subfolder; the pipeline picks them up automatically.
 
 # 4. Embed the reference corpus into local Qdrant
@@ -85,13 +86,13 @@ MLflow UI: `.venv/bin/mlflow ui --backend-store-uri sqlite:///mlflow.db`
 |---|---|
 | [01_data_audit.ipynb](notebooks/01_data_audit.ipynb) | Monthly coverage, sample visualization, data QA |
 | [02_attributes_and_model.ipynb](notebooks/02_attributes_and_model.ipynb) | Teacher labeling, prompt-iteration lab |
-| [03_trend_classification.ipynb](notebooks/03_trend_classification.ipynb) | fashion-CLIP + Qdrant k-NN: LOOCV eval, voting ablation, UMAP, calibration diagrams |
+| [03_trend_classification.ipynb](notebooks/03_trend_classification.ipynb) | fashion-CLIP + Qdrant k-NN: LOOCV eval, voting ablation, UMAP, calibration diagrams, reference-curation investigation |
 
 ---
 
 ## Tech stack
 
-- **Python 3.13**, package layout via hatchling
+- **Python 3.11+**, package layout via hatchling
 - **fashion-CLIP** (`patrickjohncyh/fashion-clip`) — domain-tuned CLIP checkpoint
 - **Qdrant** (local on-disk) — vector DB with named-vector support for hybrid search
 - **transformers / torch** (MPS / CUDA / CPU)

@@ -9,7 +9,7 @@ ARCHITECTURE.md's explicit caution.
 from __future__ import annotations
 
 import json
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 import pandas as pd
@@ -23,7 +23,7 @@ LIFECYCLE_STATES_PATH = (
 )
 
 
-class LifecycleState(str, Enum):
+class LifecycleState(StrEnum):
     RISING = "rising"
     PERSISTENT = "persistent"
     SEASONAL_RECURRING = "seasonal_recurring"
@@ -206,11 +206,15 @@ def classify_lifecycles(
         slope = row["recent_slope"]
         if slope <= declining_slope_threshold:
             states.append(LifecycleState.DECLINING.value)
-        elif row["active_run_length"] >= persistent_min_active_months and abs(
-            slope
-        ) < rising_slope_threshold:
+        elif (
+            row["active_run_length"] >= persistent_min_active_months
+            and abs(slope) < rising_slope_threshold
+        ):
             states.append(LifecycleState.PERSISTENT.value)
-        elif slope >= rising_slope_threshold or row["active_run_length"] < persistent_min_active_months:
+        elif (
+            slope >= rising_slope_threshold
+            or row["active_run_length"] < persistent_min_active_months
+        ):
             states.append(LifecycleState.RISING.value)
         else:
             states.append(LifecycleState.PERSISTENT.value)
@@ -229,8 +233,7 @@ def load_lifecycle_states(path: Path | None = None) -> dict[str, dict]:
     target = LIFECYCLE_STATES_PATH if path is None else Path(path)
     if not target.exists():
         raise FileNotFoundError(
-            f"{target} does not exist. Run scripts/compute_trend_lifecycle.py first "
-            "to produce it."
+            f"{target} does not exist. Run scripts/compute_trend_lifecycle.py first to produce it."
         )
     out: dict[str, dict] = {}
     for line in target.read_text().splitlines():
