@@ -12,6 +12,7 @@ from fashion_forensics.app.components._shared import (
 from fashion_forensics.catalog_ground_truth import judge_items_batch, load_ground_truth
 from fashion_forensics.config import DATA_DIR
 from fashion_forensics.db import connect
+from fashion_forensics.llm_judge import group_by_trend, judge_items
 from fashion_forensics.nlp.tfidf_engine import load_normalized_records
 from fashion_forensics.nlp.time_series_aggregation import load_canonical_trends
 
@@ -187,6 +188,35 @@ def render_drilldown():
         ["record_id", "image_filename"]
     ]
     display_items = display_items.merge(image_info, on="record_id", how="left")
+
+    # AI-assisted first pass, not a replacement for review - reviewing
+    # 1000+ items by hand is genuinely slow (RETROSPECTIVE.md section 9).
+    # A real LLM call per item, so this is a real (small) cost per click -
+    # shown up front, triggered explicitly, never automatic. Outside the
+    # form on purpose: this is a fetch action, not something to batch into
+    # the Submit click below.
+    unjudged_ids = [rid for rid in display_items["record_id"] if rid not in ground_truth_by_id]
+    st.caption(
+        f"🤖 {len(unjudged_ids)} unjudged item(s) on this page - AI suggestions call the LLM "
+        "once per item (a real, small cost), pre-filling verdict/reason/corrected-trend below "
+        "as an editable starting point. You still confirm before submitting."
+    )
+    if st.button(
+        f"🤖 Get AI suggestions for {len(unjudged_ids)} unjudged item(s) on this page",
+        disabled=not unjudged_ids,
+    ):
+        trend_pred_by_id = dict(zip(display_items["record_id"], display_items["trend_pred"]))
+        with st.spinner(f"Asking the LLM about {len(unjudged_ids)} item(s)..."):
+            suggestions = judge_items(group_by_trend(unjudged_ids, trend_pred_by_id))
+        for record_id, suggestion in suggestions.items():
+            st.session_state[f"judge_verdict_{record_id}"] = "👍" if suggestion["correct"] else "👎"
+            if not suggestion["correct"]:
+                st.session_state[f"judge_correction_{record_id}"] = (
+                    suggestion["corrected_trend"] or "(not specified)"
+                )
+                st.session_state[f"judge_reason_{record_id}"] = suggestion["reasoning"]
+        st.success(f"Got {len(suggestions)}/{len(unjudged_ids)} AI suggestion(s) - review below.")
+        st.rerun()
 
     # Everything below lives inside one form: selecting a verdict (or a
     # reason/corrected-trend in a card's Details popover) causes no server
