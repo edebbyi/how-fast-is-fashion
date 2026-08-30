@@ -112,6 +112,21 @@ st.markdown(
         text-transform: uppercase;
         letter-spacing: 0.08em;
     }
+
+    /* Discover's 👍/👎 verdict selector - green glow for the selected
+    "correct" option, red for "wrong", instead of Streamlit's default
+    (both options get the same theme accent color when selected, which
+    made a 👎 selection look identical to a 👍 one). Targeted by position
+    (1st button = 👍, 2nd = 👎) since that order is fixed everywhere this
+    widget is used - see grid.py's verdict selector. */
+    [data-testid="stSegmentedControl"] button:first-of-type[aria-checked="true"] {
+        background: var(--correct) !important;
+        box-shadow: 0 0 12px var(--correct);
+    }
+    [data-testid="stSegmentedControl"] button:last-of-type[aria-checked="true"] {
+        background: var(--wrong) !important;
+        box-shadow: 0 0 12px var(--wrong);
+    }
     </style>
     """,
     unsafe_allow_html=True,
