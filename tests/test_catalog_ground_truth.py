@@ -1,5 +1,5 @@
 """Tests for src/fashion_forensics/catalog_ground_truth.py - the Discover
-tab's thumbs-up/down ground-truth judgments. Filesystem paths are redirected
+tab's form-based ground-truth judgments. Filesystem paths are redirected
 into tmp_path via monkeypatch so these never touch the real
 data/03_shared/catalog_distribution/.
 """
@@ -20,18 +20,24 @@ def isolated_ground_truth(tmp_path, monkeypatch):
     return path
 
 
+def _judgment(record_id: str, judged_correct: bool, **overrides) -> dict:
+    base = {
+        "record_id": record_id,
+        "trend_pred": "quiet_luxury",
+        "confidence": 0.87,
+        "max_sim": 0.71,
+        "judged_correct": judged_correct,
+    }
+    base.update(overrides)
+    return base
+
+
 def test_load_ground_truth_missing_file_returns_empty(isolated_ground_truth):
     assert catalog_ground_truth.load_ground_truth() == {}
 
 
-def test_judge_item_writes_and_reads_back(isolated_ground_truth):
-    catalog_ground_truth.judge_item(
-        record_id="2024-02_001",
-        trend_pred="quiet_luxury",
-        confidence=0.87,
-        max_sim=0.71,
-        judged_correct=True,
-    )
+def test_judge_items_batch_writes_and_reads_back(isolated_ground_truth):
+    catalog_ground_truth.judge_items_batch([_judgment("2024-02_001", True)])
 
     loaded = catalog_ground_truth.load_ground_truth()
     assert set(loaded) == {"2024-02_001"}
@@ -45,10 +51,10 @@ def test_judge_item_writes_and_reads_back(isolated_ground_truth):
     assert "judged_at" in record
 
 
-def test_judge_item_casts_non_native_numeric_types(isolated_ground_truth):
+def test_judge_items_batch_casts_non_native_numeric_types(isolated_ground_truth):
     """confidence/max_sim are typically a pandas row's values (numpy
-    float64), not plain floats - json.dumps can't serialize those directly,
-    so judge_item must cast them before writing."""
+    float64), not plain floats - json.dumps can't serialize those
+    directly, so this must cast them before writing."""
 
     class FakeNumpyFloat:
         """Behaves like numpy.float64 for this purpose: not a plain float,
@@ -60,15 +66,18 @@ def test_judge_item_casts_non_native_numeric_types(isolated_ground_truth):
         def __float__(self) -> float:
             return self._value
 
-    record = catalog_ground_truth.judge_item(
-        record_id="2024-02_002",
-        trend_pred="basics",
-        confidence=FakeNumpyFloat(0.5),
-        max_sim=FakeNumpyFloat(0.6),
-        judged_correct=False,
+    saved = catalog_ground_truth.judge_items_batch(
+        [
+            _judgment(
+                "2024-02_002",
+                False,
+                confidence=FakeNumpyFloat(0.5),
+                max_sim=FakeNumpyFloat(0.6),
+            )
+        ]
     )
-    assert isinstance(record["confidence"], float)
-    assert isinstance(record["max_sim"], float)
+    assert isinstance(saved[0]["confidence"], float)
+    assert isinstance(saved[0]["max_sim"], float)
 
     # Confirms it's actually JSON-serializable now, not just the right type.
     raw = isolated_ground_truth.read_text().strip()
@@ -77,100 +86,68 @@ def test_judge_item_casts_non_native_numeric_types(isolated_ground_truth):
     assert parsed["max_sim"] == 0.6
 
 
-def test_judge_item_handles_missing_confidence_and_max_sim(isolated_ground_truth):
-    record = catalog_ground_truth.judge_item(
-        record_id="2024-02_003",
-        trend_pred="unknown",
-        confidence=None,
-        max_sim=None,
-        judged_correct=False,
+def test_judge_items_batch_handles_missing_confidence_and_max_sim(isolated_ground_truth):
+    saved = catalog_ground_truth.judge_items_batch(
+        [_judgment("2024-02_003", False, trend_pred="unknown", confidence=None, max_sim=None)]
     )
-    assert record["confidence"] is None
-    assert record["max_sim"] is None
+    assert saved[0]["confidence"] is None
+    assert saved[0]["max_sim"] is None
 
 
 def test_rejudging_same_record_overwrites_not_duplicates(isolated_ground_truth):
-    catalog_ground_truth.judge_item(
-        record_id="2024-02_001",
-        trend_pred="quiet_luxury",
-        confidence=0.87,
-        max_sim=0.71,
-        judged_correct=True,
-    )
-    catalog_ground_truth.judge_item(
-        record_id="2024-02_001",
-        trend_pred="quiet_luxury",
-        confidence=0.87,
-        max_sim=0.71,
-        judged_correct=False,
-    )
+    catalog_ground_truth.judge_items_batch([_judgment("2024-02_001", True)])
+    catalog_ground_truth.judge_items_batch([_judgment("2024-02_001", False)])
 
     loaded = catalog_ground_truth.load_ground_truth()
     assert len(loaded) == 1
     assert loaded["2024-02_001"]["judged_correct"] is False
 
 
-def test_multiple_records_all_persisted(isolated_ground_truth):
-    catalog_ground_truth.judge_item("b_record", "mob_wife", 0.9, 0.8, True)
-    catalog_ground_truth.judge_item("a_record", "office_siren", 0.6, 0.5, False)
+def test_batch_persists_multiple_records_and_preserves_earlier_ones(isolated_ground_truth):
+    catalog_ground_truth.judge_items_batch([_judgment("a_record", True)])
+    catalog_ground_truth.judge_items_batch(
+        [_judgment("b_record", True), _judgment("c_record", False)]
+    )
 
     loaded = catalog_ground_truth.load_ground_truth()
-    assert set(loaded) == {"a_record", "b_record"}
+    assert set(loaded) == {"a_record", "b_record", "c_record"}
 
 
-def test_add_reason_attaches_to_existing_judgment(isolated_ground_truth):
-    catalog_ground_truth.judge_item("2024-02_004", "mob_wife", 0.8, 0.7, False)
-    record = catalog_ground_truth.add_reason("2024-02_004", "actually quiet_luxury")
-
-    assert record["reason"] == "actually quiet_luxury"
-    loaded = catalog_ground_truth.load_ground_truth()
-    assert loaded["2024-02_004"]["reason"] == "actually quiet_luxury"
-    # Judgment itself untouched by adding a reason.
-    assert loaded["2024-02_004"]["judged_correct"] is False
-
-
-def test_add_reason_strips_whitespace_and_blanks_out_empty(isolated_ground_truth):
-    catalog_ground_truth.judge_item("2024-02_005", "basics", 0.5, 0.5, False)
-
-    record = catalog_ground_truth.add_reason("2024-02_005", "  too plain  ")
-    assert record["reason"] == "too plain"
-
-    record = catalog_ground_truth.add_reason("2024-02_005", "   ")
-    assert record["reason"] is None
+def test_reason_and_corrected_trend_saved_when_provided(isolated_ground_truth):
+    saved = catalog_ground_truth.judge_items_batch(
+        [
+            _judgment(
+                "2024-02_004",
+                False,
+                reason="wrong material",
+                corrected_trend="mob_wife",
+            )
+        ]
+    )
+    assert saved[0]["reason"] == "wrong material"
+    assert saved[0]["corrected_trend"] == "mob_wife"
 
 
-def test_add_reason_unjudged_record_raises(isolated_ground_truth):
-    with pytest.raises(KeyError):
-        catalog_ground_truth.add_reason("never_judged", "some reason")
+def test_reason_whitespace_stripped_and_blank_becomes_none(isolated_ground_truth):
+    saved = catalog_ground_truth.judge_items_batch(
+        [_judgment("2024-02_005", False, reason="  too plain  ")]
+    )
+    assert saved[0]["reason"] == "too plain"
+
+    saved = catalog_ground_truth.judge_items_batch([_judgment("2024-02_005", False, reason="   ")])
+    assert saved[0]["reason"] is None
 
 
-def test_add_correction_attaches_to_existing_judgment(isolated_ground_truth):
-    catalog_ground_truth.judge_item("2024-02_006", "quiet_luxury", 0.8, 0.7, False)
-    record = catalog_ground_truth.add_correction("2024-02_006", "mob_wife")
-
-    assert record["corrected_trend"] == "mob_wife"
-    loaded = catalog_ground_truth.load_ground_truth()
-    assert loaded["2024-02_006"]["corrected_trend"] == "mob_wife"
-    # Judgment itself untouched by adding a correction.
-    assert loaded["2024-02_006"]["judged_correct"] is False
-
-
-def test_add_correction_accepts_unknown_as_a_valid_value(isolated_ground_truth):
+def test_corrected_trend_accepts_unknown_as_a_valid_value(isolated_ground_truth):
     """'unknown' means the item doesn't belong to any of the 4 active
     trends at all - a real, meaningful answer, not a placeholder."""
-    catalog_ground_truth.judge_item("2024-02_007", "basics", 0.5, 0.5, False)
-    record = catalog_ground_truth.add_correction("2024-02_007", "unknown")
-    assert record["corrected_trend"] == "unknown"
+    saved = catalog_ground_truth.judge_items_batch(
+        [_judgment("2024-02_006", False, corrected_trend="unknown")]
+    )
+    assert saved[0]["corrected_trend"] == "unknown"
 
 
-def test_add_correction_none_clears_it(isolated_ground_truth):
-    catalog_ground_truth.judge_item("2024-02_008", "basics", 0.5, 0.5, False)
-    catalog_ground_truth.add_correction("2024-02_008", "mob_wife")
-
-    record = catalog_ground_truth.add_correction("2024-02_008", None)
-    assert record["corrected_trend"] is None
-
-
-def test_add_correction_unjudged_record_raises(isolated_ground_truth):
-    with pytest.raises(KeyError):
-        catalog_ground_truth.add_correction("never_judged", "mob_wife")
+def test_omitted_reason_and_corrected_trend_default_to_none(isolated_ground_truth):
+    saved = catalog_ground_truth.judge_items_batch([_judgment("2024-02_007", True)])
+    assert saved[0]["reason"] is None
+    assert saved[0]["corrected_trend"] is None

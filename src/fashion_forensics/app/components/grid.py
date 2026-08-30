@@ -9,12 +9,7 @@ from fashion_forensics.app.components._shared import (
     confidence_badge_class,
     render_attributes,
 )
-from fashion_forensics.catalog_ground_truth import (
-    add_correction,
-    add_reason,
-    judge_item,
-    load_ground_truth,
-)
+from fashion_forensics.catalog_ground_truth import judge_items_batch, load_ground_truth
 from fashion_forensics.config import DATA_DIR
 from fashion_forensics.db import connect
 from fashion_forensics.nlp.tfidf_engine import load_normalized_records
@@ -148,7 +143,7 @@ def render_drilldown():
 
     st.caption(
         f"Showing {len(filtered)} items - {len(ground_truth_by_id)} judged so far "
-        "(👍/👎 on a card to help build a real ground-truth sample)"
+        "(select 👍/👎 on any cards, then Submit at the bottom to save them all at once)"
     )
     st.divider()
 
@@ -193,32 +188,102 @@ def render_drilldown():
     ]
     display_items = display_items.merge(image_info, on="record_id", how="left")
 
-    rows = (len(display_items) + COLS_PER_ROW - 1) // COLS_PER_ROW
-    for row_idx in range(rows):
-        cols = st.columns(COLS_PER_ROW)
-        for col_idx in range(COLS_PER_ROW):
-            item_idx = row_idx * COLS_PER_ROW + col_idx
-            if item_idx >= len(display_items):
-                break
-            item = display_items.iloc[item_idx]
-            with cols[col_idx]:
-                _render_card(item, attrs_by_id.get(item["record_id"]))
+    # Everything below lives inside one form: selecting a verdict (or a
+    # reason/corrected-trend in a card's Details popover) causes no server
+    # round-trip at all - only the Submit button does, and it saves every
+    # selection on the page in one batch. This replaced a per-click
+    # instant-save model that made reviewing hundreds of items slow (every
+    # click was a full round-trip) and, per real usage, occasionally
+    # unreliable. See RETROSPECTIVE.md section 9.
+    pending: list[dict] = []
+    with st.form("discover_judgments"):
+        submitted_top = st.form_submit_button(
+            "Submit judgments on this page", key="discover_submit_top"
+        )
+        rows = (len(display_items) + COLS_PER_ROW - 1) // COLS_PER_ROW
+        for row_idx in range(rows):
+            cols = st.columns(COLS_PER_ROW)
+            for col_idx in range(COLS_PER_ROW):
+                item_idx = row_idx * COLS_PER_ROW + col_idx
+                if item_idx >= len(display_items):
+                    break
+                item = display_items.iloc[item_idx]
+                with cols[col_idx]:
+                    pending.append(
+                        _render_card(
+                            item,
+                            attrs_by_id.get(item["record_id"]),
+                            ground_truth_by_id.get(item["record_id"]),
+                        )
+                    )
+        submitted_bottom = st.form_submit_button(
+            "Submit judgments on this page", key="discover_submit_bottom"
+        )
+
+    if submitted_top or submitted_bottom:
+        to_save = []
+        for entry in pending:
+            if entry["verdict"] is None:
+                continue
+            judged_correct = entry["verdict"] == "👍"
+            # reason/corrected_trend only mean anything for a 👎 - dropped
+            # here rather than saved unused if someone filled them in on a
+            # card they ultimately marked 👍.
+            # .strip() or None normalizes the text_input's default "" the
+            # same way judge_items_batch() would when actually saving -
+            # without this, an untouched empty reason box (widget value
+            # "") never compares equal to an already-saved empty reason
+            # (None), so the "did this actually change" check below would
+            # never match and every unwritten card would look "changed".
+            reason = (entry["reason"].strip() or None) if entry["verdict"] == "👎" else None
+            corrected_trend = entry["corrected_trend"] if entry["verdict"] == "👎" else None
+
+            # Already-judged cards default to their saved verdict (so
+            # leaving one alone preserves it on resubmit) - but that means
+            # every already-judged card on the page is "selected" on every
+            # submit, even ones nobody touched. Skip anything that matches
+            # what's already saved, so judged_at only updates for cards
+            # that actually changed, not the whole page every time.
+            original = entry["original_judgment"]
+            if (
+                original is not None
+                and original["judged_correct"] == judged_correct
+                and (original.get("reason") or None) == reason
+                and (original.get("corrected_trend") or None) == corrected_trend
+            ):
+                continue
+
+            to_save.append(
+                {
+                    "record_id": entry["record_id"],
+                    "trend_pred": entry["trend_pred"],
+                    "confidence": entry["confidence"],
+                    "max_sim": entry["max_sim"],
+                    "judged_correct": judged_correct,
+                    "reason": reason,
+                    "corrected_trend": corrected_trend,
+                }
+            )
+
+        if to_save:
+            judge_items_batch(to_save)
+            st.success(f"Saved {len(to_save)} judgment(s).")
+            st.rerun()
+        else:
+            st.info("No verdicts selected - pick 👍/👎 on at least one card before submitting.")
 
 
-@st.fragment
-def _render_card(item: pd.Series, labels: dict | None) -> None:
-    """Render one item's image, badge, and a Details popover with its full
-    info (product name, trend, and attributes if available).
-
-    @st.fragment scopes a rerun to just this one card - without it, every
-    single 👍/👎/reason/correction click was re-rendering the entire page
-    (all ~100 cards: every image, badge, and popover from scratch), which
-    is what made reviewing hundreds of items painfully slow. A fragment
-    rerun re-executes only this function, not render_drilldown() - so it
-    re-reads its own judgment status fresh each time (load_ground_truth()
-    is cheap - a small file) rather than trusting a value handed down from
-    the outer, now-stale render."""
-    judgment = load_ground_truth().get(item["record_id"])
+def _render_card(item: pd.Series, labels: dict | None, judgment: dict | None) -> dict:
+    """Render one item's image, badge, verdict selector, and a Details
+    popover (product info, attributes, and - only meaningful for a 👎 -
+    an optional reason and corrected-trend picker). Returns the card's
+    current form values; nothing is saved here. render_drilldown() collects
+    one of these per card and writes them all in a single batch when the
+    form's Submit button is clicked - see RETROSPECTIVE.md section 9 for
+    why (this used to save-and-rerun on every single click, which was both
+    slow across hundreds of items and, per real usage, occasionally
+    unreliable)."""
+    record_id = item["record_id"]
     img_path = None
     if pd.notna(item.get("image_filename")):
         img_path = RAW_IMAGES_DIR / item["month"] / item["image_filename"]
@@ -240,10 +305,23 @@ def _render_card(item: pd.Series, labels: dict | None) -> None:
         unsafe_allow_html=True,
     )
     st.caption(item["month"])
-    _render_judgment_row(item, judgment)
+
+    # Pre-selected to the currently-saved verdict, if any - leaving it
+    # alone and resubmitting keeps that judgment rather than clearing it.
+    # None (nothing highlighted) means "skip this card in this submission".
+    default_verdict = None
+    if judgment is not None:
+        default_verdict = "👍" if judgment["judged_correct"] else "👎"
+    verdict = st.segmented_control(
+        "Verdict",
+        ["👍", "👎"],
+        default=default_verdict,
+        key=f"judge_verdict_{record_id}",
+        label_visibility="collapsed",
+    )
 
     with st.popover("Details"):
-        st.markdown(f"**{item.get('product_name') or item['record_id']}**")
+        st.markdown(f"**{item.get('product_name') or record_id}**")
         if item.get("product_code"):
             st.caption(item["product_code"])
         st.markdown(
@@ -257,72 +335,43 @@ def _render_card(item: pd.Series, labels: dict | None) -> None:
         # Copyable so this item can be pulled up again later via the
         # Detail tab's record ID lookup, without re-browsing to find it.
         st.caption("Record ID")
-        st.code(item["record_id"], language=None)
+        st.code(record_id, language=None)
+        st.divider()
 
+        # Only meaningful for a 👎, but rendered regardless of the verdict
+        # selector above - a form can't react to another widget's
+        # in-progress selection without a rerun, which is exactly what
+        # this form is avoiding. Dropped at submit time (see
+        # render_drilldown()) unless this card actually ends up marked 👎.
+        correction_options = ["(not specified)", *load_canonical_trends(), "unknown"]
+        default_correction = (judgment.get("corrected_trend") if judgment else None) or (
+            "(not specified)"
+        )
+        corrected_trend = st.selectbox(
+            "If wrong, what should it be?",
+            correction_options,
+            index=correction_options.index(default_correction)
+            if default_correction in correction_options
+            else 0,
+            key=f"judge_correction_{record_id}",
+        )
+        reason = st.text_input(
+            "Why? (optional)",
+            value=(judgment.get("reason") if judgment else None) or "",
+            key=f"judge_reason_{record_id}",
+            placeholder="e.g. wrong material",
+        )
 
-def _render_judgment_row(item: pd.Series, judgment: dict | None) -> None:
-    """Thumbs-up/down on whether trend_pred is actually correct for this
-    item - the real-catalog-data ground truth notebooks/03's LOOCV can't
-    give us, since that only measures the reference corpus against itself.
-    See RETROSPECTIVE.md section 9. Already-judged items show what was
-    recorded instead of the buttons, so a re-click can't accidentally
-    overwrite an earlier judgment."""
-    if judgment is not None:
-        verdict = "correct" if judgment["judged_correct"] else "incorrect"
-        st.caption(f"✓ judged: {verdict}")
-        if not judgment["judged_correct"]:
-            # Both optional and separate from the thumbs-down click itself
-            # - a 👎 registers instantly either way, these just let you add
-            # detail when you have a second to. Each saves independently
-            # (on Enter/blur for the text input, on change for the select).
-            record_id = item["record_id"]
-
-            correction_options = ["(not specified)", *load_canonical_trends(), "unknown"]
-            current_correction = judgment.get("corrected_trend") or "(not specified)"
-            new_correction = st.selectbox(
-                "What should it be?",
-                correction_options,
-                index=correction_options.index(current_correction)
-                if current_correction in correction_options
-                else 0,
-                key=f"judge_correction_{record_id}",
-            )
-            if new_correction != current_correction:
-                add_correction(
-                    record_id, None if new_correction == "(not specified)" else new_correction
-                )
-                st.rerun()
-
-            new_reason = st.text_input(
-                "Why? (optional)",
-                value=judgment.get("reason") or "",
-                key=f"judge_reason_{record_id}",
-                placeholder="e.g. wrong material",
-            )
-            if new_reason != (judgment.get("reason") or ""):
-                add_reason(record_id, new_reason)
-                st.rerun()
-        return
-
-    record_id = item["record_id"]
-    col_up, col_down = st.columns(2)
-    with col_up:
-        if st.button("👍", key=f"judge_up_{record_id}", help="Prediction is correct"):
-            judge_item(
-                record_id=record_id,
-                trend_pred=item.get("trend_pred"),
-                confidence=item.get("confidence"),
-                max_sim=item.get("max_sim"),
-                judged_correct=True,
-            )
-            st.rerun()
-    with col_down:
-        if st.button("👎", key=f"judge_down_{record_id}", help="Prediction is wrong"):
-            judge_item(
-                record_id=record_id,
-                trend_pred=item.get("trend_pred"),
-                confidence=item.get("confidence"),
-                max_sim=item.get("max_sim"),
-                judged_correct=False,
-            )
-            st.rerun()
+    return {
+        "record_id": record_id,
+        "trend_pred": item.get("trend_pred"),
+        "confidence": item.get("confidence"),
+        "max_sim": item.get("max_sim"),
+        "verdict": verdict,
+        "reason": reason,
+        "corrected_trend": None if corrected_trend == "(not specified)" else corrected_trend,
+        # Handed back so render_drilldown() can tell "unchanged, saved
+        # already" apart from "actually new/different this submission" -
+        # see the comment there on why that distinction matters.
+        "original_judgment": judgment,
+    }

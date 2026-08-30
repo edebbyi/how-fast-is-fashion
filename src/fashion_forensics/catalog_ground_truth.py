@@ -38,65 +38,38 @@ def save_ground_truth(records: dict[str, dict]) -> None:
             f.write(json.dumps(records[record_id]) + "\n")
 
 
-def judge_item(
-    record_id: str,
-    trend_pred: str | None,
-    confidence: float | None,
-    max_sim: float | None,
-    judged_correct: bool,
-) -> dict:
-    """Record a thumbs-up/down judgment for one catalog item's predicted
-    trend. Overwrites any earlier judgment for the same record_id - the
-    most recent click wins.
+def judge_items_batch(judgments: list[dict]) -> list[dict]:
+    """Record many judgments in one file read + write, instead of one
+    read-modify-write cycle per item. Built for Discover's form-based
+    review flow (RETROSPECTIVE.md section 9): selecting verdicts (and,
+    for a 👎, an optional reason/corrected-trend) on a whole page of
+    cards causes no server round-trip at all until a single Submit
+    click, at which point every selection lands here together.
 
+    Each dict needs record_id/trend_pred/confidence/max_sim/judged_correct,
+    plus the optional reason/corrected_trend (both default to None - only
+    meaningful when judged_correct is False, but this function doesn't
+    enforce that itself; the caller decides what's worth saving).
     confidence/max_sim are cast to plain float (or None) since callers
-    often pass pandas/numpy values (e.g. a DataFrame row's .get() result),
-    which json.dumps can't serialize as-is.
-
-    `reason`/`corrected_trend` always start empty here - both are
-    separate, optional steps (see add_reason / add_correction) so a
-    thumbs-down stays a single fast click, not something that requires
-    filling in more detail to register at all."""
+    often pass pandas/numpy values, which json.dumps can't serialize
+    as-is."""
     records = load_ground_truth()
-    record = {
-        "record_id": record_id,
-        "trend_pred": trend_pred,
-        "confidence": float(confidence) if confidence is not None else None,
-        "max_sim": float(max_sim) if max_sim is not None else None,
-        "judged_correct": bool(judged_correct),
-        "reason": None,
-        "corrected_trend": None,
-        "judged_at": datetime.now(UTC).isoformat(),
-    }
-    records[record_id] = record
+    now = datetime.now(UTC).isoformat()
+    saved = []
+    for j in judgments:
+        confidence = j.get("confidence")
+        max_sim = j.get("max_sim")
+        record = {
+            "record_id": j["record_id"],
+            "trend_pred": j.get("trend_pred"),
+            "confidence": float(confidence) if confidence is not None else None,
+            "max_sim": float(max_sim) if max_sim is not None else None,
+            "judged_correct": bool(j["judged_correct"]),
+            "reason": (j.get("reason") or "").strip() or None,
+            "corrected_trend": j.get("corrected_trend") or None,
+            "judged_at": now,
+        }
+        records[record["record_id"]] = record
+        saved.append(record)
     save_ground_truth(records)
-    return record
-
-
-def add_reason(record_id: str, reason: str) -> dict:
-    """Attach (or replace) a brief free-text reason on an already-judged
-    item - e.g. why a 👎 prediction was wrong. Raises KeyError if
-    record_id hasn't been judged yet; a reason without a judgment doesn't
-    mean anything here."""
-    records = load_ground_truth()
-    if record_id not in records:
-        raise KeyError(f"{record_id!r} has not been judged yet - judge it before adding a reason")
-    records[record_id]["reason"] = reason.strip() or None
-    save_ground_truth(records)
-    return records[record_id]
-
-
-def add_correction(record_id: str, corrected_trend: str | None) -> dict:
-    """Record what the trend actually should have been on an already-
-    judged item - e.g. the model said quiet_luxury, it's really mob_wife
-    (or "unknown", meaning it doesn't belong to any of the 4 active
-    trends at all). Raises KeyError if record_id hasn't been judged yet,
-    same as add_reason."""
-    records = load_ground_truth()
-    if record_id not in records:
-        raise KeyError(
-            f"{record_id!r} has not been judged yet - judge it before adding a correction"
-        )
-    records[record_id]["corrected_trend"] = corrected_trend or None
-    save_ground_truth(records)
-    return records[record_id]
+    return saved
