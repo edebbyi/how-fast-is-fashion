@@ -14,16 +14,66 @@ than duplicating that plumbing - see that module for how it works. Each
 distinct trend_pred gets its own compiled prompt (the taxonomy context
 that matters - the PREDICTED trend's own rule - differs per trend), reused
 across every item currently predicted that trend.
+
+Each prompt also includes a few real, past human-corrected judgments for
+that same trend_pred (text-only, no images - see MAX_FEW_SHOT_EXAMPLES) -
+showing the model real examples of how a person reasons about this
+taxonomy, rather than relying only on prose instructions that need
+patching after every new kind of miss.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
 
+from fashion_forensics.catalog_ground_truth import load_ground_truth
 from fashion_forensics.config import load_yaml_config
 from fashion_forensics.prompt_lab import run_prompt
 
 VALID_TRENDS = ["basics", "mob_wife", "office_siren", "quiet_luxury", "unknown"]
+
+# Text-only, not images - a few real examples of how a human reasons about
+# this exact taxonomy transfer better than yet another prose instruction
+# added after each new miss, and cost nothing extra in image tokens. Capped
+# small on purpose: this is meant to nudge reasoning style, not turn into a
+# retrieval system - see RETROSPECTIVE.md section 9 for why per-item
+# similarity retrieval was deliberately deferred until there's a much
+# bigger ground-truth pool than the ~135 judgments this shipped with.
+MAX_FEW_SHOT_EXAMPLES = 3
+
+
+def _select_few_shot_examples(
+    trend_pred: str, max_examples: int = MAX_FEW_SHOT_EXAMPLES
+) -> list[dict]:
+    """Past judgments where a human corrected this same trend_pred - the
+    most instructive kind ("here's a mistake and why"), not just any past
+    judgment. Graceful with a small or empty pool: returns however many
+    qualify, most recent first, down to zero."""
+    ground_truth = load_ground_truth()
+    candidates = [
+        r
+        for r in ground_truth.values()
+        if r.get("trend_pred") == trend_pred
+        and r.get("judged_correct") is False
+        and (r.get("reason") or "").strip()
+    ]
+    candidates.sort(key=lambda r: r.get("judged_at") or "", reverse=True)
+    return candidates[:max_examples]
+
+
+def _format_few_shot_block(trend_pred: str) -> str:
+    examples = _select_few_shot_examples(trend_pred)
+    if not examples:
+        return ""
+    lines = []
+    for e in examples:
+        corrected = e.get("corrected_trend")
+        verdict = f"actually {corrected}" if corrected else "marked incorrect"
+        lines.append(f"- Predicted {trend_pred}, {verdict} - {e['reason']}")
+    return (
+        f"\nExamples of real corrections a human reviewer made for {trend_pred} "
+        f"predictions:\n" + "\n".join(lines) + "\n"
+    )
 
 
 def _trend_signal_text(trend: dict) -> str:
@@ -62,6 +112,7 @@ def _build_judge_prompt(trend_pred: str) -> str:
 
     summaries = _trend_summaries()
     other_trends = "\n".join(f"- {v}" for k, v in summaries.items() if k != trend_pred)
+    few_shot_block = _format_few_shot_block(trend_pred)
 
     return f"""You are checking a fashion trend classifier's prediction against a real product.
 
@@ -72,7 +123,7 @@ The classifier predicted: {trend_pred}
 For reference, the other active trends are:
 {other_trends}
 - unknown: doesn't clearly belong to any of the above.
-
+{few_shot_block}
 PRODUCT NAME: {{{{product_name}}}}
 DESCRIPTION: {{{{description}}}}
 COMPOSITION: {{{{composition}}}}

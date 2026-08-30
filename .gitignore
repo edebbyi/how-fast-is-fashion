@@ -64,3 +64,6 @@ Thumbs.db
 # Misc
 *.log
 *.tmp
+
+# Local-only working notes, not for the repo
+RETROSPECTIVE.md

@@ -6,7 +6,19 @@ no network, no cost.
 
 from __future__ import annotations
 
+import pytest
+
 from fashion_forensics import llm_judge
+
+
+@pytest.fixture(autouse=True)
+def no_real_ground_truth(monkeypatch):
+    """Prompt-building now reads real judgments for few-shot examples
+    (load_ground_truth()) - default every test to an empty pool so
+    existing tests stay deterministic and don't depend on the real,
+    growing catalog_ground_truth.jsonl. Tests of the few-shot behavior
+    itself override this explicitly."""
+    monkeypatch.setattr(llm_judge, "load_ground_truth", lambda: {})
 
 
 def test_group_by_trend_groups_correctly():
@@ -150,3 +162,76 @@ def test_judge_items_skips_empty_groups(monkeypatch):
 
     llm_judge.judge_items({"basics": []})
     assert calls == []
+
+
+def _ground_truth_row(record_id: str, trend_pred: str, **overrides) -> dict:
+    row = {
+        "record_id": record_id,
+        "trend_pred": trend_pred,
+        "judged_correct": False,
+        "reason": "a real reason",
+        "corrected_trend": "quiet_luxury",
+        "judged_at": "2026-08-30T00:00:00+00:00",
+    }
+    row.update(overrides)
+    return row
+
+
+def test_select_few_shot_examples_only_uses_corrected_judgments_for_same_trend(monkeypatch):
+    ground_truth = {
+        "a": _ground_truth_row("a", "basics"),  # matches
+        "b": _ground_truth_row("b", "quiet_luxury"),  # wrong trend_pred
+        "c": _ground_truth_row("c", "basics", judged_correct=True),  # not a correction
+        "d": _ground_truth_row("d", "basics", reason=""),  # no reasoning text
+    }
+    monkeypatch.setattr(llm_judge, "load_ground_truth", lambda: ground_truth)
+
+    examples = llm_judge._select_few_shot_examples("basics")
+    assert [e["record_id"] for e in examples] == ["a"]
+
+
+def test_select_few_shot_examples_caps_at_max_and_prefers_most_recent(monkeypatch):
+    ground_truth = {
+        "old": _ground_truth_row("old", "basics", judged_at="2026-08-01T00:00:00+00:00"),
+        "mid": _ground_truth_row("mid", "basics", judged_at="2026-08-15T00:00:00+00:00"),
+        "new": _ground_truth_row("new", "basics", judged_at="2026-08-30T00:00:00+00:00"),
+    }
+    monkeypatch.setattr(llm_judge, "load_ground_truth", lambda: ground_truth)
+
+    examples = llm_judge._select_few_shot_examples("basics", max_examples=2)
+    assert [e["record_id"] for e in examples] == ["new", "mid"]
+
+
+def test_select_few_shot_examples_empty_pool_returns_empty_list(monkeypatch):
+    monkeypatch.setattr(llm_judge, "load_ground_truth", lambda: {})
+    assert llm_judge._select_few_shot_examples("basics") == []
+
+
+def test_format_few_shot_block_empty_when_no_examples(monkeypatch):
+    monkeypatch.setattr(llm_judge, "load_ground_truth", lambda: {})
+    assert llm_judge._format_few_shot_block("basics") == ""
+
+
+def test_format_few_shot_block_includes_reason_and_corrected_trend(monkeypatch):
+    ground_truth = {"a": _ground_truth_row("a", "basics", corrected_trend="mob_wife")}
+    monkeypatch.setattr(llm_judge, "load_ground_truth", lambda: ground_truth)
+
+    block = llm_judge._format_few_shot_block("basics")
+    assert "a real reason" in block
+    assert "actually mob_wife" in block
+
+
+def test_format_few_shot_block_handles_missing_corrected_trend(monkeypatch):
+    ground_truth = {"a": _ground_truth_row("a", "basics", corrected_trend=None)}
+    monkeypatch.setattr(llm_judge, "load_ground_truth", lambda: ground_truth)
+
+    block = llm_judge._format_few_shot_block("basics")
+    assert "marked incorrect" in block
+
+
+def test_build_judge_prompt_includes_few_shot_examples_when_available(monkeypatch):
+    ground_truth = {"a": _ground_truth_row("a", "basics", reason="too avant garde to be basic")}
+    monkeypatch.setattr(llm_judge, "load_ground_truth", lambda: ground_truth)
+
+    prompt = llm_judge._build_judge_prompt("basics")
+    assert "too avant garde to be basic" in prompt
