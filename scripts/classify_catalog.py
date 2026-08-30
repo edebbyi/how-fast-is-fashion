@@ -61,6 +61,10 @@ import requests
 from loguru import logger
 
 from fashion_forensics.config import PROJECT_ROOT, load_yaml_config, settings
+from fashion_forensics.nlp.material_override import (
+    load_fine_material_keywords,
+    match_fine_material_keyword,
+)
 from fashion_forensics.retrieval.classifier import predict_trend
 from fashion_forensics.retrieval.embedder import FashionClipEmbedder
 from fashion_forensics.retrieval.qdrant_store import TrendQdrantStore
@@ -279,6 +283,8 @@ def main(
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
 
+    fine_material_keywords = load_fine_material_keywords()
+
     results: list[dict] = []
     n_failed = 0
     for i, record in enumerate(catalog, 1):
@@ -298,6 +304,21 @@ def main(
         )
         trend_pred = "unknown" if prediction.open_set_unknown else prediction.trend_pred
         max_sim = max((n["score"] for n in prediction.matched_refs), default=0.0)
+
+        # Cheap, zero-LLM-cost text override for one specific known failure
+        # mode: image-only retrieval predicting basics for an "elevated
+        # basic" that's actually quiet_luxury, when the retailer's own
+        # product name/description already says the fabric plainly. Only
+        # ever touches a basics prediction - see material_override.py for
+        # why this is scoped this narrowly, and why it's a text keyword
+        # check rather than switching to hybrid mode.
+        image_trend_pred = trend_pred
+        material_override_keyword = None
+        if trend_pred == "basics":
+            material_override_keyword = match_fine_material_keyword(record, fine_material_keywords)
+            if material_override_keyword:
+                trend_pred = "quiet_luxury"
+
         results.append(
             {
                 "record_id": record["record_id"],
@@ -314,6 +335,12 @@ def main(
                 # to re-run the classifier (see the Lab "Threshold Explorer").
                 "winning_trend": prediction.trend_pred,
                 "max_sim": round(max_sim, 4),
+                # image_trend_pred is trend_pred before the material
+                # override above (always set, even when nothing changed) -
+                # so "what did pure image similarity say" stays knowable
+                # even for overridden rows.
+                "image_trend_pred": image_trend_pred,
+                "material_override_keyword": material_override_keyword,
             }
         )
         if i % 100 == 0:
