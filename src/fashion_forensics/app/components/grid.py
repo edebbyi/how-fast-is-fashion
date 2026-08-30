@@ -82,6 +82,13 @@ def render_drilldown():
     # each card show "already judged" without a per-card file read.
     ground_truth_by_id = load_ground_truth()
 
+    # Unsaved AI suggestions from "Get AI suggestions" below, keyed by
+    # record_id - persists across reruns in session_state (not the
+    # ground-truth file) until a card's judgment is actually submitted.
+    # Same dict object read here and mutated in place further down, so
+    # both places always agree on what's pending.
+    ai_suggestions: dict[str, dict] = st.session_state.setdefault("ai_suggestions", {})
+
     # --- Filters ---
     col_trend, col_unknown, col_month, col_attrs, col_judgment = st.columns(5)
 
@@ -141,6 +148,20 @@ def render_drilldown():
         filtered = filtered[~filtered["record_id"].isin(ground_truth_by_id)]
     if only_with_attrs:
         filtered = filtered[filtered["record_id"].isin(attrs_by_id)]
+
+    # Only offered once there's something to show - with 100+ cards on a
+    # page, an AI suggestion buried in one unmarked card was easy to lose
+    # track of. This narrows the whole grid down to just the items the AI
+    # actually touched, across every page - see the badge in _render_card
+    # for the per-card reasoning/verdict.
+    show_ai_only = False
+    if ai_suggestions:
+        show_ai_only = st.checkbox(
+            f"🤖 Show only AI-suggested, unconfirmed items ({len(ai_suggestions)})",
+            key="discover_ai_only",
+        )
+        if show_ai_only:
+            filtered = filtered[filtered["record_id"].isin(ai_suggestions)]
 
     st.caption(
         f"Showing {len(filtered)} items - {len(ground_truth_by_id)} judged so far "
@@ -209,13 +230,21 @@ def render_drilldown():
         with st.spinner(f"Asking the LLM about {len(unjudged_ids)} item(s)..."):
             suggestions = judge_items(group_by_trend(unjudged_ids, trend_pred_by_id))
         for record_id, suggestion in suggestions.items():
+            ai_suggestions[record_id] = suggestion
             st.session_state[f"judge_verdict_{record_id}"] = "👍" if suggestion["correct"] else "👎"
             if not suggestion["correct"]:
                 st.session_state[f"judge_correction_{record_id}"] = (
                     suggestion["corrected_trend"] or "(not specified)"
                 )
                 st.session_state[f"judge_reason_{record_id}"] = suggestion["reasoning"]
-        st.success(f"Got {len(suggestions)}/{len(unjudged_ids)} AI suggestion(s) - review below.")
+        # Auto-engage the "show only AI-suggested" toggle so the very next
+        # thing shown is exactly what got graded, not the same 100-card
+        # grid with the changes buried somewhere inside it.
+        st.session_state["discover_ai_only"] = True
+        st.success(
+            f"Got {len(suggestions)}/{len(unjudged_ids)} AI suggestion(s) - "
+            "filtered below to just these. Review and Submit."
+        )
         st.rerun()
 
     # Everything below lives inside one form: selecting a verdict (or a
@@ -244,6 +273,7 @@ def render_drilldown():
                             item,
                             attrs_by_id.get(item["record_id"]),
                             ground_truth_by_id.get(item["record_id"]),
+                            ai_suggestions.get(item["record_id"]),
                         )
                     )
         submitted_bottom = st.form_submit_button(
@@ -297,13 +327,22 @@ def render_drilldown():
 
         if to_save:
             judge_items_batch(to_save)
+            for entry in to_save:
+                # Confirmed now - a real saved judgment, not a pending
+                # unconfirmed AI suggestion any more.
+                ai_suggestions.pop(entry["record_id"], None)
             st.success(f"Saved {len(to_save)} judgment(s).")
             st.rerun()
         else:
             st.info("No verdicts selected - pick 👍/👎 on at least one card before submitting.")
 
 
-def _render_card(item: pd.Series, labels: dict | None, judgment: dict | None) -> dict:
+def _render_card(
+    item: pd.Series,
+    labels: dict | None,
+    judgment: dict | None,
+    ai_suggestion: dict | None = None,
+) -> dict:
     """Render one item's image, badge, verdict selector, and a Details
     popover (product info, attributes, and - only meaningful for a 👎 -
     an optional reason and corrected-trend picker). Returns the card's
@@ -312,7 +351,12 @@ def _render_card(item: pd.Series, labels: dict | None, judgment: dict | None) ->
     form's Submit button is clicked - see RETROSPECTIVE.md section 9 for
     why (this used to save-and-rerun on every single click, which was both
     slow across hundreds of items and, per real usage, occasionally
-    unreliable)."""
+    unreliable).
+
+    ai_suggestion, if set, is an unconfirmed "Get AI suggestions" result for
+    this card (see render_drilldown()) - shown as a visible badge so it
+    doesn't take opening the Details popover to see what the AI suggested
+    and why, across a page of many otherwise-identical cards."""
     record_id = item["record_id"]
     img_path = None
     if pd.notna(item.get("image_filename")):
@@ -349,6 +393,16 @@ def _render_card(item: pd.Series, labels: dict | None, judgment: dict | None) ->
         key=f"judge_verdict_{record_id}",
         label_visibility="collapsed",
     )
+
+    if ai_suggestion is not None:
+        suggested_icon = "👍" if ai_suggestion["correct"] else "👎"
+        suggestion_line = f"🤖 AI suggests {suggested_icon}"
+        corrected = ai_suggestion.get("corrected_trend")
+        if not ai_suggestion["correct"] and corrected:
+            suggestion_line += f" → {corrected}"
+        st.markdown(f'<span class="ai-badge">{suggestion_line}</span>', unsafe_allow_html=True)
+        if ai_suggestion.get("reasoning"):
+            st.caption(ai_suggestion["reasoning"])
 
     with st.popover("Details"):
         st.markdown(f"**{item.get('product_name') or record_id}**")

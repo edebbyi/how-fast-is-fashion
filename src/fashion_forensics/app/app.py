@@ -33,6 +33,7 @@ st.markdown(
         --correct: #2d6a4f;
         --wrong: #6b2020;
         --near-miss: #7c6f2a;
+        --ai-accent: #3a4a7c;
     }
 
     .stApp {
@@ -89,6 +90,21 @@ st.markdown(
     .conf-high { background: var(--correct); color: #fff; }
     .conf-mid { background: var(--near-miss); color: #fff; }
     .conf-low { background: var(--wrong); color: #fff; }
+
+    /* Discover's per-card "🤖 AI suggests" badge - a distinct color from
+    conf-badge/the verdict selector's green/red so a pending, unconfirmed
+    AI suggestion never reads as an actual saved verdict. */
+    .ai-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        background: var(--ai-accent);
+        color: #fff;
+        margin-top: 4px;
+    }
 
     /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
