@@ -26,6 +26,7 @@ import argparse
 from loguru import logger
 
 from fashion_forensics.config import PROJECT_ROOT
+from fashion_forensics.nlp.catalog_dedup import dedupe_for_counting
 from fashion_forensics.nlp.lifecycle_classifier import LIFECYCLE_VERSION, classify_lifecycles
 from fashion_forensics.nlp.time_series_aggregation import (
     aggregate_monthly_frequency,
@@ -69,10 +70,18 @@ def main(
         logger.error(str(e))
         raise SystemExit(1) from e
 
+    # catalog_classifications.jsonl is photo-level (one row per photo angle,
+    # same product often appears several times a month) - deduped here to
+    # one row per distinct product so lifecycle counts aren't inflated. See
+    # catalog_dedup.py.
+    n_raw = len(records)
+    records = dedupe_for_counting(records)
+
     trends = load_canonical_trends()
     n_months = len({r["month"] for r in records})
     logger.info(
-        f"Loaded {len(records)} classifications across {n_months} months, {len(trends)} trends"
+        f"Loaded {n_raw} classifications, deduped to {len(records)} distinct products "
+        f"across {n_months} months, {len(trends)} trends"
     )
 
     freq_df = aggregate_monthly_frequency(records, trends=trends, active_threshold=active_threshold)
@@ -118,6 +127,7 @@ def main(
         "n_trends": len(trends),
         "n_months": n_months,
         "n_records": len(records),
+        "n_raw_records": n_raw,
     }
     tags = {"lifecycle_version": LIFECYCLE_VERSION}
 

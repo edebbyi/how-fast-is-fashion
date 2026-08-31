@@ -61,6 +61,7 @@ import requests
 from loguru import logger
 
 from fashion_forensics.config import PROJECT_ROOT, load_yaml_config, settings
+from fashion_forensics.nlp.catalog_dedup import dedupe_for_counting
 from fashion_forensics.nlp.material_override import (
     load_fine_material_keywords,
     match_fine_material_keyword,
@@ -198,13 +199,28 @@ def calibrate_open_set_threshold(loocv_results: list[dict]) -> float:
 
 
 def write_snapshot_md(
-    path: Path, snapshot_counts: dict[str, int], total: int, threshold: float, n_failed: int
+    path: Path,
+    snapshot_counts: dict[str, int],
+    total: int,
+    threshold: float,
+    n_failed: int,
+    n_raw_photos: int | None = None,
 ) -> None:
     lines = [
         "# Catalog trend distribution — full labeled catalog snapshot",
         "",
         f"Image-only k-NN classification, open-set threshold={threshold:.3f}.",
-        f"{total} classified, {n_failed} image downloads failed and were skipped.",
+    ]
+    if n_raw_photos is not None and n_raw_photos != total:
+        lines.append(
+            f"{total} distinct products classified (deduped from {n_raw_photos} catalog "
+            "photos - the scraper captures one row per photo angle, not per product; "
+            "each product's highest-confidence photo represents it here), "
+            f"{n_failed} image downloads failed and were skipped."
+        )
+    else:
+        lines.append(f"{total} classified, {n_failed} image downloads failed and were skipped.")
+    lines += [
         "",
         "| trend | count | share |",
         "|---|---|---|",
@@ -355,20 +371,30 @@ def main(
         for r in results:
             f.write(json.dumps(r) + "\n")
 
+    # catalog_classifications.jsonl stays at the full photo level (Discover and
+    # the ranking engine read it that way, deliberately - see catalog_dedup.py).
+    # Both views below count distinct products instead, since the scraper
+    # captures one row per photo angle and the same product otherwise gets
+    # double/triple-counted, sometimes under different trends per angle.
+    deduped = dedupe_for_counting(results)
+    total_products = len(deduped)
+
     # View A — catalog-wide snapshot, zero-filled across every configured trend + unknown
     snapshot_counts = {label: 0 for label in label_columns}
-    for r in results:
+    for r in deduped:
         snapshot_counts[r["trend_pred"]] += 1
     for trend, count in snapshot_counts.items():
-        share = count / total if total else 0.0
+        share = count / total_products if total_products else 0.0
         logger.info(f"  {trend:15s} {count:5d}  ({share:.1%})")
     snapshot_path = OUTPUT_DIR / "catalog_snapshot.md"
-    write_snapshot_md(snapshot_path, snapshot_counts, total, open_set_threshold, n_failed)
+    write_snapshot_md(
+        snapshot_path, snapshot_counts, total_products, open_set_threshold, n_failed, total
+    )
 
     # View B — per-month counts, zero-filled across every configured trend + unknown
-    months_sorted = sorted(set(r["month"] for r in results))
+    months_sorted = sorted(set(r["month"] for r in deduped))
     monthly_counts = {m: {label: 0 for label in label_columns} for m in months_sorted}
-    for r in results:
+    for r in deduped:
         monthly_counts[r["month"]][r["trend_pred"]] += 1
     monthly_csv_path = OUTPUT_DIR / "monthly_trend_counts.csv"
     write_monthly_csv(monthly_csv_path, monthly_counts, months_sorted, label_columns)
@@ -381,6 +407,7 @@ def main(
         "search_mode": "image",
         "open_set_threshold": open_set_threshold,
         "n_catalog_items": total,
+        "n_distinct_products": total_products,
         "n_months": len(months_sorted),
         "n_download_failed": n_failed,
     }
