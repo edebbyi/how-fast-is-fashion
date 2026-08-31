@@ -2,7 +2,7 @@
 
 | trend | state | active_months | first_observed | last_active | peak_month |
 |---|---|---|---|---|---|
-| basics | rising | 23 | 2024-02 | 2026-01 | 2024-03 |
-| mob_wife | declining | 10 | 2024-05 | 2025-12 | 2025-09 |
-| office_siren | inactive | 0 | — | — | 2025-09 |
-| quiet_luxury | rising | 23 | 2024-02 | 2026-01 | 2024-02 |
+| basics | declining | 14 | 2024-03 | 2026-01 | 2024-10 |
+| mob_wife | seasonal_recurring | 2 | 2024-12 | 2025-08 | 2024-12 |
+| office_siren | inactive | 0 | — | — | — |
+| quiet_luxury | persistent | 22 | 2024-02 | 2026-01 | 2024-02 |

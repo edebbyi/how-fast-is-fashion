@@ -28,10 +28,14 @@ REJECT_REASONS = ["off-trend", "low quality", "not fashion editorial", "ambiguou
 
 REFERENCE_LOOCV_PATH = DATA_DIR / "03_shared" / "catalog_distribution" / "reference_loocv.jsonl"
 
-# Deliberately re-picked from auto-calibration's 0.680 (see ARCHITECTURE.md v12) -
-# reclassifying must reuse this value, not fall back to open_set_threshold=None
-# (auto-calibrate), or it would silently undo that decision.
-CATALOG_OPEN_SET_THRESHOLD = 0.62
+# Re-picked from 0.62 (see ARCHITECTURE.md v12) once real catalog ground truth
+# existed to check it against - RETROSPECTIVE.md section 9 found 0.62 only
+# gave 0.509 precision on 161 real human judgments (well below the
+# reference-corpus LOOCV's 0.865), while 0.70 gave 0.647, at the cost of
+# ~2/3 of the catalog falling to "unknown". Reclassifying must reuse this
+# value, not fall back to open_set_threshold=None (auto-calibrate), or it
+# would silently undo that decision.
+CATALOG_OPEN_SET_THRESHOLD = 0.70
 
 
 def render_review_queue():
@@ -399,7 +403,7 @@ def _render_reclassify_button() -> None:
     st.caption(
         f"Re-runs classification, lifecycle, and ranking against the updated corpus, "
         f"reusing the threshold already chosen for this catalog ({CATALOG_OPEN_SET_THRESHOLD}, "
-        f"not auto-calibrated - see ARCHITECTURE.md v12). Takes about 30 minutes and "
+        f"not auto-calibrated - see RETROSPECTIVE.md section 9). Takes about 30 minutes and "
         f"blocks this page while running."
     )
     if st.button("Reclassify catalog (~30 min)"):

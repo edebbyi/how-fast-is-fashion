@@ -1,5 +1,5 @@
 trend,first_observed,peak_month,last_active,active_month_count,active_run_length,num_active_periods,months_since_last_active,recent_slope,state,lifecycle_version
-basics,2024-02,2024-03,2026-01,23,23,1,0.0,0.10414560161779575,rising,v1
-mob_wife,2024-05,2025-09,2025-12,10,4,3,1.0,-0.04244031830238727,declining,v1
-office_siren,,2025-09,,0,0,0,,0.0,inactive,v1
-quiet_luxury,2024-02,2024-02,2026-01,23,23,1,0.0,0.10111223458038422,rising,v1
+basics,2024-03,2024-10,2026-01,14,5,2,0.0,-0.04306020066889632,declining,v1
+mob_wife,2024-12,2024-12,2025-08,2,1,2,4.0,0.0,seasonal_recurring,v1
+office_siren,,,,0,0,0,,0.0,inactive,v1
+quiet_luxury,2024-02,2024-02,2026-01,22,22,1,0.0,-0.0030333670374115274,persistent,v1

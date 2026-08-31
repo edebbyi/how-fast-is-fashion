@@ -1,5 +1,5 @@
 profile,kendall_tau,top5_overlap
-synthetic_user_rising_basics,0.6768627450980393,0.42857142857142855
-synthetic_user_persistent_luxury,0.5984313725490197,0.42857142857142855
-synthetic_user_seasonal_mobwife,0.923137254901961,0.42857142857142855
-synthetic_user_inactive_officesiren,0.9105882352941178,0.6666666666666666
+synthetic_user_rising_basics,0.7205882352941176,0.42857142857142855
+synthetic_user_persistent_luxury,0.9117647058823529,1.0
+synthetic_user_seasonal_mobwife,0.9999999999999999,1.0
+synthetic_user_inactive_officesiren,0.9705882352941175,1.0

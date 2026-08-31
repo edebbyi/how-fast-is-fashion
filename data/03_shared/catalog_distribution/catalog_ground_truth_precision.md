@@ -2,9 +2,11 @@
 
 From 161 human judgments collected in Discover (👍/👎).
 
-**Overall precision at 0.62: 0.509** (82/161 correct)
+**Precision at the shipped threshold (0.70): 0.647** (33/51 correct - the subset of judged items whose max_sim clears the current threshold)
 
-## Per-trend precision
+Precision across all 161 judgments ever collected (judged under whichever open-set threshold was shipped at the time - most of this sample predates the current threshold): 0.509 (82/161 correct)
+
+## Per-trend precision (across all judgments, not threshold-filtered)
 
 | Trend | Precision | n |
 |---|---|---|
@@ -15,11 +17,11 @@ From 161 human judgments collected in Discover (👍/👎).
 
 ## Threshold sensitivity (within the judged sample)
 
-Only checks thresholds >= 0.62 - the judged sample only contains items that already cleared the current threshold, so precision below it isn't knowable from this data.
+Only checks thresholds >= the shipped threshold (0.70) - the judged sample only contains items that already cleared whatever threshold was shipped when they were judged, so precision below that isn't knowable from this data.
 
 | Threshold | Precision | n |
 |---|---|---|
-| 0.62 | 0.509 | 161 |
-| 0.65 | 0.512 | 129 |
-| 0.68 | 0.597 | 72 |
 | 0.70 | 0.647 | 51 |
+| 0.72 | 0.735 | 34 |
+| 0.75 | 0.533 | 15 |
+| 0.80 | - | 0 |
