@@ -1,17 +1,17 @@
 # Catalog ground-truth precision
 
-From 11 human judgments collected in Discover (👍/👎). **Below the 30-item confidence threshold - directional only, not a number to act on yet.**
+From 161 human judgments collected in Discover (👍/👎).
 
-**Overall precision at 0.62: 0.545** (6/11 correct)
+**Overall precision at 0.62: 0.509** (82/161 correct)
 
 ## Per-trend precision
 
 | Trend | Precision | n |
 |---|---|---|
-| basics | 0.000 | 2 |
-| mob_wife | 1.000 | 1 |
-| office_siren | 0.000 | 1 |
-| quiet_luxury | 0.714 | 7 |
+| basics | 0.500 | 54 |
+| mob_wife | 0.800 | 10 |
+| office_siren | 0.310 | 29 |
+| quiet_luxury | 0.559 | 68 |
 
 ## Threshold sensitivity (within the judged sample)
 
@@ -19,7 +19,7 @@ Only checks thresholds >= 0.62 - the judged sample only contains items that alre
 
 | Threshold | Precision | n |
 |---|---|---|
-| 0.62 | 0.545 | 11 |
-| 0.65 | 0.375 | 8 |
-| 0.68 | 0.400 | 5 |
-| 0.70 | 0.400 | 5 |
+| 0.62 | 0.509 | 161 |
+| 0.65 | 0.512 | 129 |
+| 0.68 | 0.597 | 72 |
+| 0.70 | 0.647 | 51 |
