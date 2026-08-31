@@ -131,15 +131,24 @@ st.markdown(
 
     /* Discover's 👍/👎 verdict selector - green glow for the selected
     "correct" option, red for "wrong", instead of Streamlit's default
-    (both options get the same theme accent color when selected, which
-    made a 👎 selection look identical to a 👍 one). Targeted by position
-    (1st button = 👍, 2nd = 👎) since that order is fixed everywhere this
-    widget is used - see grid.py's verdict selector. */
-    [data-testid="stSegmentedControl"] button:first-of-type[aria-checked="true"] {
+    (both options get the same default red theme accent when selected,
+    which made a 👎 selection look identical to a 👍 one). Targeted by
+    position (1st button = 👍, 2nd = 👎) since that order is fixed
+    everywhere this widget is used - see grid.py's verdict selector.
+
+    First attempt at this (data-testid="stSegmentedControl", aria-checked)
+    matched nothing real - the container's actual testid, confirmed by
+    reading Streamlit's own frontend bundle, is stButtonGroup, and each
+    option carries a literal data-variant="segmented_control" attribute
+    instead. Selection state comes from data-selected, the convention the
+    underlying library (react-aria-components' ToggleButtonGroup - given
+    away by the selectionMode/selectedKeys/onSelectionChange props this
+    bundle passes) uses for exactly this. */
+    [data-testid="stButtonGroup"] [data-variant="segmented_control"]:first-of-type[data-selected] {
         background: var(--correct) !important;
         box-shadow: 0 0 12px var(--correct);
     }
-    [data-testid="stSegmentedControl"] button:last-of-type[aria-checked="true"] {
+    [data-testid="stButtonGroup"] [data-variant="segmented_control"]:last-of-type[data-selected] {
         background: var(--wrong) !important;
         box-shadow: 0 0 12px var(--wrong);
     }
