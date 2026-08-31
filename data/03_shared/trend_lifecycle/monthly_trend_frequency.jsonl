@@ -18,11 +18,11 @@
 {"date":"2024-05","trend":"office_siren","inventory_count":77,"trend_count":0,"trend_frequency":0.0,"is_active":false}
 {"date":"2024-05","trend":"quiet_luxury","inventory_count":77,"trend_count":25,"trend_frequency":0.3246753247,"is_active":true}
 {"date":"2024-05","trend":"unknown","inventory_count":77,"trend_count":33,"trend_frequency":0.4285714286,"is_active":true}
-{"date":"2024-06","trend":"basics","inventory_count":128,"trend_count":40,"trend_frequency":0.3125,"is_active":true}
-{"date":"2024-06","trend":"mob_wife","inventory_count":128,"trend_count":5,"trend_frequency":0.0390625,"is_active":false}
-{"date":"2024-06","trend":"office_siren","inventory_count":128,"trend_count":3,"trend_frequency":0.0234375,"is_active":false}
-{"date":"2024-06","trend":"quiet_luxury","inventory_count":128,"trend_count":49,"trend_frequency":0.3828125,"is_active":true}
-{"date":"2024-06","trend":"unknown","inventory_count":128,"trend_count":31,"trend_frequency":0.2421875,"is_active":true}
+{"date":"2024-06","trend":"basics","inventory_count":127,"trend_count":40,"trend_frequency":0.3149606299,"is_active":true}
+{"date":"2024-06","trend":"mob_wife","inventory_count":127,"trend_count":4,"trend_frequency":0.031496063,"is_active":false}
+{"date":"2024-06","trend":"office_siren","inventory_count":127,"trend_count":3,"trend_frequency":0.0236220472,"is_active":false}
+{"date":"2024-06","trend":"quiet_luxury","inventory_count":127,"trend_count":49,"trend_frequency":0.3858267717,"is_active":true}
+{"date":"2024-06","trend":"unknown","inventory_count":127,"trend_count":31,"trend_frequency":0.2440944882,"is_active":true}
 {"date":"2024-07","trend":"basics","inventory_count":117,"trend_count":37,"trend_frequency":0.3162393162,"is_active":true}
 {"date":"2024-07","trend":"mob_wife","inventory_count":117,"trend_count":0,"trend_frequency":0.0,"is_active":false}
 {"date":"2024-07","trend":"office_siren","inventory_count":117,"trend_count":2,"trend_frequency":0.0170940171,"is_active":false}
